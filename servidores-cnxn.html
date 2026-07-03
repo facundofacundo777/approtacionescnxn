@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Servidores · Planificación de equipos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F5F7;
+  --card:#FFFFFF;
+  --ink:#17233B;
+  --ink-soft:#5A6478;
+  --ink-faint:#98A0B3;
+  --line:#E3E6EC;
+  --amber:#F2A61D;
+  --amber-soft:#FDF3DD;
+  --amber-ink:#8A5B00;
+  --ok:#2E9E63;
+  --ok-soft:#E3F4EA;
+  --danger:#D9534A;
+  --danger-soft:#FBE9E8;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(23,35,59,.06), 0 4px 16px rgba(23,35,59,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Archivo',system-ui,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.45;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:15px}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- Pantallas de acceso ---------- */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);max-width:420px;width:100%;padding:36px 32px}
+.brand-mark{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px}
+.brand-dot{width:12px;height:12px;border-radius:3px;background:var(--amber);transform:rotate(45deg)}
+.brand-name{font-weight:800;letter-spacing:.14em;font-size:13px;text-transform:uppercase}
+.gate h1{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-bottom:10px}
+.gate p{color:var(--ink-soft);margin-bottom:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600;transition:transform .08s ease, box-shadow .12s ease}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover{box-shadow:0 4px 14px rgba(23,35,59,.25)}
+.btn-amber{background:var(--amber);color:var(--ink)}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{background:#fff}
+.btn-danger{background:var(--danger-soft);color:var(--danger)}
+.btn-sm{padding:7px 12px;font-size:13px;border-radius:8px}
+.btn-block{width:100%}
+.gate .hint{font-size:13px;color:var(--ink-faint);margin-top:18px;margin-bottom:0}
+.gate code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--paper);padding:2px 6px;border-radius:5px}
+.setup-steps{margin:16px 0 0;padding-left:20px;color:var(--ink-soft);font-size:14px}
+.setup-steps li{margin-bottom:8px}
+
+/* ---------- Estructura de la app ---------- */
+#app{display:none;max-width:1180px;margin:0 auto;padding:0 16px 90px}
+header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:14px 0 0;}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.user-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft)}
+.user-chip .rol{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--card);border:1px solid var(--line);padding:2px 8px;border-radius:99px;color:var(--ink)}
+.tabs{display:flex;gap:4px;margin-top:14px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;padding:10px 14px;font-size:14px;font-weight:600;color:var(--ink-faint);border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:var(--ink);border-bottom-color:var(--amber)}
+.view{display:none;padding-top:20px}
+.view.active{display:block}
+
+/* ---------- Barra de mes ---------- */
+.month-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.month-nav{display:flex;align-items:center;gap:10px}
+.month-nav button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:16px;color:var(--ink)}
+.month-label{font-weight:800;font-size:20px;letter-spacing:-.01em;text-transform:capitalize;min-width:170px;text-align:center}
+.month-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- Tarjetas de reunión (call sheet) ---------- */
+.week-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin:22px 0 10px;display:flex;align-items:center;gap:10px}
+.week-label::after{content:"";flex:1;height:1px;background:var(--line)}
+.meet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.meet-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;text-align:left;box-shadow:var(--shadow);transition:border-color .12s ease, transform .08s ease;display:flex;flex-direction:column;gap:12px}
+.meet-card:hover{border-color:var(--ink)}
+.meet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.meet-time{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1}
+.meet-date{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-top:5px}
+.meet-title{font-weight:700;font-size:14px;text-align:right}
+.badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px;margin-top:4px}
+.badge-adn{background:var(--amber-soft);color:var(--amber-ink)}
+.badge-esp{background:#EAE8FD;color:#4A3FB5}
+.coverage{display:flex;flex-direction:column;gap:6px}
+.cov-track{display:flex;gap:2px;height:8px}
+.cov-seg{flex:1;border-radius:2px;background:var(--line)}
+.cov-seg.on{background:var(--ok)}
+.cov-meta{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft)}
+.cov-state{font-weight:600}
+.cov-state.full{color:var(--ok)}
+.cov-state.partial{color:var(--amber-ink)}
+.cov-state.empty{color:var(--danger)}
+.empty-state{background:var(--card);border:1px dashed var(--line);border-radius:var(--radius);padding:40px 24px;text-align:center;color:var(--ink-soft)}
+.empty-state strong{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+
+/* ---------- Detalle de reunión ---------- */
+.sheet-overlay{position:fixed;inset:0;background:rgba(23,35,59,.4);z-index:60;display:none}
+.sheet-overlay.open{display:block}
+.sheet{position:fixed;z-index:70;background:var(--card);display:none;flex-direction:column;
+  right:0;top:0;bottom:0;width:min(560px,100%);box-shadow:-8px 0 30px rgba(23,35,59,.15)}
+.sheet.open{display:flex}
+.sheet-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet-head h2{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.sheet-head .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-top:4px}
+.close-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font-size:15px;flex-shrink:0}
+.sheet-body{flex:1;overflow-y:auto;padding:16px 22px 30px}
+.area-block{margin-bottom:20px}
+.area-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.area-name{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.area-lock{font-size:11px;color:var(--ink-faint);font-family:'IBM Plex Mono',monospace}
+.act-row{padding:10px 0;border-top:1px solid var(--line)}
+.act-name{font-size:13px;color:var(--ink-soft);margin-bottom:7px;display:flex;justify-content:space-between}
+.act-count{font-family:'IBM Plex Mono',monospace;font-size:11px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600}
+.chip button{background:none;border:none;color:var(--ink-faint);font-size:13px;line-height:1;padding:0 0 0 2px}
+.chip button:hover{color:var(--danger)}
+.chip-add{border:1.5px dashed var(--ink-faint);background:none;border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink-soft)}
+.chip-add:hover{border-color:var(--amber);color:var(--amber-ink);background:var(--amber-soft)}
+
+/* ---------- Modales ---------- */
+.modal-overlay{position:fixed;inset:0;background:rgba(23,35,59,.45);z-index:80;display:none;align-items:flex-end;justify-content:center;padding:0}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column}
+@media(min-width:640px){.modal-overlay{align-items:center;padding:24px}.modal{border-radius:20px}}
+.modal-head{padding:18px 22px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.modal-head h3{font-size:16px;font-weight:800}
+.modal-body{padding:16px 22px;overflow-y:auto}
+.modal-foot{padding:14px 22px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:6px}
+.field input[type=text],.field input[type=email],.field input[type=tel],.field input[type=date],.field input[type=time],.field input[type=number],.field select,.field textarea{
+  width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink)}
+.field input:focus,.field select:focus{border-color:var(--ink);outline:none;background:#fff}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.check-item{display:flex;align-items:center;gap:8px;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--paper)}
+.check-item input{accent-color:var(--amber)}
+.search-box{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper);margin-bottom:12px}
+.picker-list{display:flex;flex-direction:column;gap:6px}
+.picker-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);text-align:left;width:100%}
+.picker-row:not(:disabled):hover{border-color:var(--ink)}
+.picker-row:disabled{opacity:.55;cursor:not-allowed}
+.picker-row .pname{font-weight:600;font-size:14px}
+.picker-row .pstate{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-align:right}
+.picker-row .pstate.conf{color:var(--danger)}
+.toggle-line{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);margin-bottom:12px}
+.toggle-line input{accent-color:var(--amber)}
+
+/* ---------- Tablas y listas ---------- */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.toolbar .search-box{flex:1;min-width:180px;margin-bottom:0}
+.list-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.row-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.row-item:last-child{border-bottom:none}
+.row-main{min-width:0}
+.row-title{font-weight:700;font-size:14px}
+.row-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-actions{display:flex;gap:6px;flex-shrink:0}
+.tag{display:inline-block;font-size:11px;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:1px 7px;margin:2px 3px 0 0}
+table.stats{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+table.stats th,table.stats td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);font-size:14px}
+table.stats th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);background:var(--paper)}
+table.stats tr:last-child td{border-bottom:none}
+.load-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 8px;border-radius:99px}
+.load-hi{background:var(--danger-soft);color:var(--danger)}
+.load-ok{background:var(--ok-soft);color:var(--ok)}
+.section-note{font-size:13px;color:var(--ink-soft);margin-bottom:14px;max-width:640px}
+
+/* ---------- Toast ---------- */
+#toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;gap:8px;width:min(400px,calc(100% - 32px))}
+.toast{background:var(--ink);color:#fff;padding:12px 16px;border-radius:12px;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(23,35,59,.3);animation:toastIn .2s ease}
+.toast.err{background:var(--danger)}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ===== Pantalla de configuración (primera vez) ===== -->
+<div class="gate" id="setupScreen" style="display:none">
+  <div class="gate-card">
+    <div class="brand-mark"><span class="brand-dot"></span><span class="brand-name">Servidores</span></div>
+    <h1>Falta conectar Firebase</h1>
+    <p>La app necesita un proyecto de Firebase para guardar los datos y manejar el acceso.</p>
+    <ol class="setup-steps">
+      <li>Entrá a <code>console.firebase.google.com</code> y creá un proyecto.</li>
+      <li>Activá <strong>Authentication → Google</strong> y <strong>Firestore Database</strong>.</li>
+      <li>En Configuración del proyecto, copiá el objeto <code>firebaseConfig</code>.</li>
+      <li>Abrí este archivo HTML y pegalo donde dice <code>PEGAR_CONFIG_ACA</code>.</li>
+      <li>Agregá tu email en <code>ADMIN_EMAILS</code> para entrar como administrador.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ===== Login ===== -->
+<div class="gate" id="loginScreen" style="display:none">
+  <div class="gate-card">
+    <div class="brand-mark"><span class="brand-dot"></span><span class="brand-name">Servidores</span></div>
+    <h1>Planificación de equipos de servicio</h1>
+    <p>Organizá las reuniones del mes, asigná servidores por área y evitá superposiciones.</p>
+    <button class="btn btn-primary btn-block" id="btnLogin">Ingresar con Google</button>
+  </div>
+</div>
+
+<!-- ===== Acceso pendiente ===== -->
+<div class="gate" id="pendingScreen" style="display:none">
+  <div class="gate-card">
+    <div class="brand-mark"><span class="brand-dot"></span><span class="brand-name">Servidores</span></div>
+    <h1>Tu acceso está pendiente</h1>
+    <p id="pendingText">Ya quedó registrado tu ingreso. Un administrador tiene que aprobarte y asignarte un área antes de que puedas usar la app.</p>
+    <button class="btn btn-ghost" id="btnLogoutPending">Salir</button>
+  </div>
+</div>
+
+<!-- ===== App ===== -->
+<div id="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand-mark" style="margin-bottom:0"><span class="brand-dot"></span><span class="brand-name">Servidores</span></div>
+      <div class="user-chip">
+        <span id="userName"></span>
+        <span class="rol" id="userRol"></span>
+        <button class="btn btn-ghost btn-sm" id="btnLogout">Salir</button>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-view="plan">Planificación</button>
+      <button class="tab" data-view="servidores">Servidores</button>
+      <button class="tab" data-view="stats">Carga del mes</button>
+      <button class="tab" data-view="areas" data-admin="1">Áreas</button>
+      <button class="tab" data-view="usuarios" data-admin="1">Usuarios</button>
+    </nav>
+  </header>
+
+  <!-- Vista: Planificación -->
+  <section class="view active" id="view-plan">
+    <div class="month-bar">
+      <div class="month-nav">
+        <button id="mesPrev" aria-label="Mes anterior">‹</button>
+        <div class="month-label" id="mesLabel"></div>
+        <button id="mesNext" aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="month-actions">
+        <button class="btn btn-ghost btn-sm" id="btnExportPlan">Exportar mes</button>
+        <button class="btn btn-ghost btn-sm" data-admin="1" id="btnAddReunion">+ Reunión especial</button>
+        <button class="btn btn-amber btn-sm" data-admin="1" id="btnGenerar">Generar reuniones</button>
+      </div>
+    </div>
+    <div id="planList"></div>
+  </section>
+
+  <!-- Vista: Servidores -->
+  <section class="view" id="view-servidores">
+    <div class="toolbar">
+      <input class="search-box" id="servSearch" type="text" placeholder="Buscar por nombre, área o actividad…">
+      <button class="btn btn-ghost btn-sm" id="btnPlantilla">Plantilla CSV</button>
+      <button class="btn btn-ghost btn-sm" id="btnImport">Importar</button>
+      <button class="btn btn-ghost btn-sm" id="btnExportServ">Exportar</button>
+      <button class="btn btn-primary btn-sm" id="btnNuevoServ">+ Servidor</button>
+    </div>
+    <div class="list-card" id="servList"></div>
+  </section>
+
+  <!-- Vista: Carga del mes -->
+  <section class="view" id="view-stats">
+    <p class="section-note">Cantidad de asignaciones por servidor en el mes seleccionado en Planificación. Sirve para detectar quién está sobrecargado y quién puede servir más.</p>
+    <div id="statsTable"></div>
+  </section>
+
+  <!-- Vista: Áreas -->
+  <section class="view" id="view-areas">
+    <p class="section-note">Definí las áreas y sus actividades con la cantidad de puestos por reunión. Los cambios aplican a las reuniones que se planifiquen de acá en adelante.</p>
+    <div class="toolbar"><button class="btn btn-primary btn-sm" id="btnNuevaArea">+ Área</button></div>
+    <div id="areasList"></div>
+  </section>
+
+  <!-- Vista: Usuarios -->
+  <section class="view" id="view-usuarios">
+    <p class="section-note">Las personas que ingresan con Google aparecen acá. Asignales un rol: los administradores manejan todo; los líderes solo asignan servidores dentro de sus áreas.</p>
+    <div class="list-card" id="usersList"></div>
+  </section>
+</div>
+
+<!-- ===== Panel de reunión ===== -->
+<div class="sheet-overlay" id="sheetOverlay"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="sheet-head">
+    <div>
+      <h2 id="sheetTitle"></h2>
+      <div class="sub" id="sheetSub"></div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-danger btn-sm" data-admin="1" id="btnDelReunion">Eliminar</button>
+      <button class="close-x" id="sheetClose" aria-label="Cerrar">✕</button>
+    </div>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+</aside>
+
+<!-- ===== Modal: elegir servidor ===== -->
+<div class="modal-overlay" id="pickerOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="pickerTitle">Asignar servidor</h3><button class="close-x" data-close="pickerOverlay">✕</button></div>
+    <div class="modal-body">
+      <input class="search-box" id="pickerSearch" type="text" placeholder="Buscar servidor…">
+      <label class="toggle-line"><input type="checkbox" id="pickerAll"> Mostrar todos, aunque no tengan esta actividad</label>
+      <div class="picker-list" id="pickerList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: servidor ===== -->
+<div class="modal-overlay" id="servOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="servModalTitle">Nuevo servidor</h3><button class="close-x" data-close="servOverlay">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre y apellido</label><input type="text" id="fNombre"></div>
+      <div class="field"><label>Email</label><input type="email" id="fEmail"></div>
+      <div class="field"><label>Teléfono</label><input type="tel" id="fTelefono"></div>
+      <div class="field"><label>Actividades que puede hacer</label><div class="check-grid" id="fActividades"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="btnDelServ" style="margin-right:auto;display:none">Eliminar</button>
+      <button class="btn btn-ghost" data-close="servOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveServ">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: generar reuniones ===== -->
+<div class="modal-overlay" id="genOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Generar reuniones del mes</h3><button class="close-x" data-close="genOverlay">✕</button></div>
+    <div class="modal-body">
+      <p class="section-note">Destildá las que no correspondan (por ejemplo, los sábados de ADN que no haya reunión). Las que ya existen no se duplican.</p>
+      <div class="picker-list" id="genList"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="genOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnGenConfirm">Crear reuniones</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: reunión especial ===== -->
+<div class="modal-overlay" id="reuOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Reunión especial</h3><button class="close-x" data-close="reuOverlay">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre</label><input type="text" id="rTitulo" placeholder="Ej: Noche de adoración"></div>
+      <div class="field"><label>Fecha</label><input type="date" id="rFecha"></div>
+      <div class="field"><label>Hora</label><input type="time" id="rHora" value="20:00"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="reuOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveReunion">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: área ===== -->
+<div class="modal-overlay" id="areaOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="areaModalTitle">Área</h3><button class="close-x" data-close="areaOverlay">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre del área</label><input type="text" id="aNombre"></div>
+      <div class="field"><label>Actividades y puestos por reunión</label><div id="aActs"></div>
+        <button class="btn btn-ghost btn-sm" id="btnAddAct" style="margin-top:8px">+ Actividad</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="btnDelArea" style="margin-right:auto;display:none">Eliminar área</button>
+      <button class="btn btn-ghost" data-close="areaOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveArea">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: importar ===== -->
+<div class="modal-overlay" id="impOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Importar servidores</h3><button class="close-x" data-close="impOverlay">✕</button></div>
+    <div class="modal-body">
+      <p class="section-note">Subí un archivo CSV con las columnas <strong>Nombre, Email, Telefono, Actividades</strong>. En Actividades escribí "Área: Actividad" separadas con "|". Descargá la plantilla para ver un ejemplo. Los nombres que ya existen se actualizan.</p>
+      <div class="field"><input type="file" id="impFile" accept=".csv,text/csv"></div>
+      <div id="impPreview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="impOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnImpConfirm" disabled>Importar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* =====================================================================
+   CONFIGURACIÓN — editá solo esta sección
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCHz0RMxK8YZFWnJNlpEXC06Kvgc2Prrik",
+  authDomain: "approtacionescnxn.firebaseapp.com",
+  projectId: "approtacionescnxn",
+  storageBucket: "approtacionescnxn.firebasestorage.app",
+  messagingSenderId: "203742729240",
+  appId: "1:203742729240:web:5f258ddc0529ee9a78df6d",
+  measurementId: "G-7TSB36W8DH"
+};
+// Emails que entran siempre como administradores:
+const ADMIN_EMAILS = ["facundo.chiniecc@gmail.com"];
+// Umbral de "alta carga": asignaciones por mes a partir de las cuales se marca en rojo
+const UMBRAL_CARGA = 8;
+
+/* ===================================================================== */
+
+const AREAS_DEFAULT = [
+  {id:"sonido", nombre:"Sonido", orden:1, actividades:[
+    {id:"principal", nombre:"Sonidista principal", cupo:1},
+    {id:"asistente", nombre:"Asistente de sonido", cupo:2}]},
+  {id:"pantalla", nombre:"Pantalla", orden:2, actividades:[
+    {id:"operador", nombre:"Operador de pantalla", cupo:1}]},
+  {id:"iluminacion", nombre:"Iluminación", orden:3, actividades:[
+    {id:"iluminador", nombre:"Iluminador", cupo:1}]},
+  {id:"video", nombre:"Video", orden:4, actividades:[
+    {id:"dir_camaras", nombre:"Director de cámaras", cupo:1},
+    {id:"dir_streaming", nombre:"Director de streaming", cupo:1},
+    {id:"camarografo", nombre:"Camarógrafo", cupo:3}]},
+  {id:"fotografia", nombre:"Fotografía", orden:5, actividades:[
+    {id:"fotografo", nombre:"Fotógrafo", cupo:2}]},
+  {id:"redes", nombre:"Redes sociales", orden:6, actividades:[
+    {id:"redes", nombre:"Redes sociales", cupo:2}]},
+  {id:"produccion", nombre:"Producción", orden:7, actividades:[
+    {id:"productor", nombre:"Productor general", cupo:1}]}
+];
+
+const $ = id => document.getElementById(id);
+const state = {
+  user:null, rol:null, misAreas:[],
+  areas:[], servidores:[], reuniones:[], asignaciones:{},
+  mes: new Date().toISOString().slice(0,7),
+  unsubs:[], sheetReunionId:null,
+  picker:null, editServId:null, editAreaId:null, importRows:null
+};
+
+let db, auth;
+const configOk = !JSON.stringify(firebaseConfig).includes("PEGAR_CONFIG_ACA");
+
+/* ---------- Utilidades ---------- */
+function toast(msg, err){ const t=document.createElement("div"); t.className="toast"+(err?" err":""); t.textContent=msg; $("toasts").appendChild(t); setTimeout(()=>t.remove(), 3500); }
+function esAdmin(){ return state.rol==="admin"; }
+function puedeEditarArea(areaId){ return esAdmin() || (state.rol==="lider" && state.misAreas.includes(areaId)); }
+function slotKey(areaId, actId){ return areaId+"."+actId; }
+function fechaLocal(str){ const [y,m,d]=str.split("-").map(Number); return new Date(y,m-1,d); }
+const DIAS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const MESES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function fmtFecha(str){ const d=fechaLocal(str); return DIAS[d.getDay()]+" "+d.getDate(); }
+function mesLabel(mes){ const [y,m]=mes.split("-").map(Number); return MESES[m-1]+" "+y; }
+function servidor(id){ return state.servidores.find(s=>s.id===id); }
+function area(id){ return state.areas.find(a=>a.id===id); }
+function actividad(areaId, actId){ const a=area(areaId); return a && a.actividades.find(x=>x.id===actId); }
+function nombreActividad(key){ const [ar,ac]=key.split("."); const a=area(ar), x=actividad(ar,ac);
+  return (a?a.nombre:ar)+": "+(x?x.nombre:ac); }
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function slug(s){ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,""); }
+
+/* ---------- Arranque ---------- */
+if(!configOk){
+  $("setupScreen").style.display="flex";
+}else{
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+
+  auth.onAuthStateChanged(async user=>{
+    if(!user){ mostrar("loginScreen"); return; }
+    state.user = user;
+    const email = (user.email||"").toLowerCase();
+    if(ADMIN_EMAILS.map(e=>e.toLowerCase()).includes(email)){
+      state.rol="admin"; state.misAreas=[];
+      await db.collection("usuarios").doc(user.uid).set({email, nombre:user.displayName||email, rol:"admin", areas:[]},{merge:true});
+    }else{
+      const ref = db.collection("usuarios").doc(user.uid);
+      const snap = await ref.get();
+      if(!snap.exists){
+        await ref.set({email, nombre:user.displayName||email, rol:"pendiente", areas:[], creado:firebase.firestore.FieldValue.serverTimestamp()});
+        state.rol="pendiente";
+      }else{
+        const d=snap.data(); state.rol=d.rol||"pendiente"; state.misAreas=d.areas||[];
+      }
+    }
+    if(state.rol==="pendiente"){ mostrar("pendingScreen"); return; }
+    entrar();
+  });
+}
+
+function mostrar(idPantalla){
+  ["setupScreen","loginScreen","pendingScreen"].forEach(id=>$(id).style.display = id===idPantalla ? "flex":"none");
+  $("app").style.display = "none";
+}
+
+async function entrar(){
+  ["setupScreen","loginScreen","pendingScreen"].forEach(id=>$(id).style.display="none");
+  $("app").style.display="block";
+  $("userName").textContent = state.user.displayName || state.user.email;
+  $("userRol").textContent = esAdmin() ? "admin" : "líder";
+  document.querySelectorAll("[data-admin]").forEach(el=>{ el.style.display = esAdmin() ? "" : "none"; });
+  if(esAdmin()) await seedAreas();
+  suscribirGlobal();
+  suscribirMes();
+  renderMesLabel();
+}
+
+async function seedAreas(){
+  const snap = await db.collection("areas").limit(1).get();
+  if(snap.empty){
+    const batch = db.batch();
+    AREAS_DEFAULT.forEach(a=>batch.set(db.collection("areas").doc(a.id), a));
+    await batch.commit();
+  }
+}
+
+/* ---------- Suscripciones ---------- */
+function suscribirGlobal(){
+  state.unsubs.push(db.collection("areas").orderBy("orden").onSnapshot(s=>{
+    state.areas = s.docs.map(d=>({id:d.id, ...d.data()}));
+    renderTodo();
+  }));
+  state.unsubs.push(db.collection("servidores").orderBy("nombre").onSnapshot(s=>{
+    state.servidores = s.docs.map(d=>({id:d.id, ...d.data()}));
+    renderTodo();
+  }));
+  if(esAdmin()){
+    state.unsubs.push(db.collection("usuarios").onSnapshot(s=>{
+      state.usuarios = s.docs.map(d=>({id:d.id, ...d.data()}));
+      renderUsuarios();
+    }));
+  }
+}
+
+let unsubMes = [];
+function suscribirMes(){
+  unsubMes.forEach(u=>u()); unsubMes=[];
+  state.reuniones=[]; state.asignaciones={};
+  unsubMes.push(db.collection("reuniones").where("mes","==",state.mes).onSnapshot(s=>{
+    state.reuniones = s.docs.map(d=>({id:d.id, ...d.data()}))
+      .sort((a,b)=> (a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+    renderPlan(); renderStats();
+  }));
+  unsubMes.push(db.collection("asignaciones").where("mes","==",state.mes).onSnapshot(s=>{
+    state.asignaciones={};
+    s.docs.forEach(d=>state.asignaciones[d.id]=d.data());
+    renderPlan(); renderStats();
+    if(state.sheetReunionId) renderSheet();
+  }));
+}
+
+function renderTodo(){ renderPlan(); renderServidores(); renderAreas(); renderStats(); if(state.sheetReunionId) renderSheet(); }
+
+/* ---------- Login / logout ---------- */
+$("btnLogin").onclick = ()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast(e.message,true));
+$("btnLogout").onclick = ()=>{ state.unsubs.forEach(u=>u()); unsubMes.forEach(u=>u()); location.reload(); auth.signOut(); };
+$("btnLogoutPending").onclick = ()=>auth.signOut().then(()=>location.reload());
+
+/* ---------- Tabs ---------- */
+$("tabs").addEventListener("click", e=>{
+  const b = e.target.closest(".tab"); if(!b) return;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t===b));
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+b.dataset.view));
+});
+
+/* ---------- Mes ---------- */
+function cambiarMes(delta){
+  const [y,m]=state.mes.split("-").map(Number);
+  const d=new Date(y, m-1+delta, 1);
+  state.mes = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  renderMesLabel(); suscribirMes();
+}
+$("mesPrev").onclick=()=>cambiarMes(-1);
+$("mesNext").onclick=()=>cambiarMes(1);
+function renderMesLabel(){ $("mesLabel").textContent = mesLabel(state.mes); }
+
+/* ---------- Planificación ---------- */
+function cupoTotal(){ return state.areas.reduce((t,a)=>t+a.actividades.reduce((x,ac)=>x+ac.cupo,0),0); }
+function cubiertos(reunionId){
+  const asig = state.asignaciones[reunionId];
+  if(!asig || !asig.slots) return 0;
+  let n=0;
+  state.areas.forEach(a=>a.actividades.forEach(ac=>{
+    const arr = asig.slots[slotKey(a.id,ac.id)]||[];
+    n += Math.min(arr.length, ac.cupo);
+  }));
+  return n;
+}
+
+function renderPlan(){
+  const cont=$("planList");
+  if(!state.reuniones.length){
+    cont.innerHTML = `<div class="empty-state"><strong>No hay reuniones en ${escapeHtml(mesLabel(state.mes))}</strong>${esAdmin()?'Usá "Generar reuniones" para crear las de este mes.':'Un administrador todavía no generó las reuniones de este mes.'}</div>`;
+    return;
+  }
+  const total = cupoTotal();
+  let html="", semanaActual=null;
+  state.reuniones.forEach(r=>{
+    const d=fechaLocal(r.fecha);
+    const lunes=new Date(d); lunes.setDate(d.getDate()-((d.getDay()+6)%7));
+    const wk = lunes.toISOString().slice(0,10);
+    if(wk!==semanaActual){
+      if(semanaActual!==null) html+="</div>";
+      semanaActual=wk;
+      html += `<div class="week-label">Semana del ${lunes.getDate()} de ${MESES[lunes.getMonth()]}</div><div class="meet-grid">`;
+    }
+    const n=cubiertos(r.id);
+    const pct = total? n/total : 0;
+    const cls = pct>=1?"full": pct>0?"partial":"empty";
+    const txt = pct>=1?"Completa": pct>0?(total-n)+" puestos libres":"Sin asignar";
+    let segs=""; for(let i=0;i<total;i++) segs+=`<span class="cov-seg${i<n?" on":""}"></span>`;
+    const badge = r.titulo==="ADN Jóvenes" ? '<span class="badge badge-adn">ADN</span>'
+      : r.especial ? '<span class="badge badge-esp">Especial</span>' : "";
+    html += `<button class="meet-card" onclick="abrirReunion('${r.id}')">
+      <div class="meet-head">
+        <div><div class="meet-time">${r.hora}</div><div class="meet-date">${fmtFecha(r.fecha)}</div></div>
+        <div class="meet-title">${escapeHtml(r.titulo)}${badge}</div>
+      </div>
+      <div class="coverage">
+        <div class="cov-track">${segs}</div>
+        <div class="cov-meta"><span>${n}/${total}</span><span class="cov-state ${cls}">${txt}</span></div>
+      </div>
+    </button>`;
+  });
+  html+="</div>";
+  cont.innerHTML=html;
+}
+
+/* ---------- Panel de reunión ---------- */
+window.abrirReunion = function(id){
+  state.sheetReunionId=id;
+  renderSheet();
+  $("sheetOverlay").classList.add("open");
+  $("sheet").classList.add("open");
+};
+function cerrarSheet(){ state.sheetReunionId=null; $("sheetOverlay").classList.remove("open"); $("sheet").classList.remove("open"); }
+$("sheetClose").onclick=cerrarSheet;
+$("sheetOverlay").onclick=cerrarSheet;
+
+function renderSheet(){
+  const r = state.reuniones.find(x=>x.id===state.sheetReunionId);
+  if(!r){ cerrarSheet(); return; }
+  $("sheetTitle").textContent = r.titulo;
+  $("sheetSub").textContent = fmtFecha(r.fecha)+" de "+MESES[fechaLocal(r.fecha).getMonth()]+" · "+r.hora+" hs";
+  $("btnDelReunion").style.display = esAdmin() ? "" : "none";
+  const asig = state.asignaciones[r.id]?.slots || {};
+  let html="";
+  state.areas.forEach(a=>{
+    const editable = puedeEditarArea(a.id);
+    html += `<div class="area-block"><div class="area-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+    a.actividades.forEach(ac=>{
+      const key=slotKey(a.id,ac.id);
+      const ids = asig[key]||[];
+      html += `<div class="act-row"><div class="act-name"><span>${escapeHtml(ac.nombre)}</span><span class="act-count">${ids.length}/${ac.cupo}</span></div><div class="chips">`;
+      ids.forEach(sid=>{
+        const s=servidor(sid);
+        html += `<span class="chip">${escapeHtml(s?s.nombre:"(eliminado)")}${editable?`<button title="Quitar" onclick="quitarAsignacion('${key}','${sid}')">✕</button>`:""}</span>`;
+      });
+      if(editable){
+        for(let i=ids.length;i<ac.cupo;i++)
+          html += `<button class="chip-add" onclick="abrirPicker('${a.id}','${ac.id}')">+ Asignar</button>`;
+        if(ids.length>=ac.cupo)
+          html += `<button class="chip-add" onclick="abrirPicker('${a.id}','${ac.id}')" title="Agregar por encima del cupo">+</button>`;
+      }
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+  });
+  $("sheetBody").innerHTML=html;
+}
+
+$("btnDelReunion").onclick = async ()=>{
+  const r = state.reuniones.find(x=>x.id===state.sheetReunionId);
+  if(!r || !confirm("¿Eliminar la reunión "+r.titulo+" del "+fmtFecha(r.fecha)+"? Se pierden sus asignaciones.")) return;
+  await db.collection("reuniones").doc(r.id).delete();
+  await db.collection("asignaciones").doc(r.id).delete().catch(()=>{});
+  cerrarSheet(); toast("Reunión eliminada");
+};
+
+/* ---------- Asignar / quitar (con detección de conflictos) ---------- */
+window.abrirPicker = function(areaId, actId){
+  state.picker={areaId, actId};
+  $("pickerTitle").textContent = nombreActividad(slotKey(areaId,actId));
+  $("pickerSearch").value=""; $("pickerAll").checked=false;
+  renderPicker();
+  $("pickerOverlay").classList.add("open");
+};
+$("pickerSearch").oninput=renderPicker;
+$("pickerAll").onchange=renderPicker;
+
+function conflictoDe(servidorId, reunionId){
+  const slots = state.asignaciones[reunionId]?.slots || {};
+  for(const key in slots){ if((slots[key]||[]).includes(servidorId)) return key; }
+  return null;
+}
+
+function renderPicker(){
+  if(!state.picker) return;
+  const {areaId, actId}=state.picker;
+  const key=slotKey(areaId,actId);
+  const q = $("pickerSearch").value.toLowerCase();
+  const todos = $("pickerAll").checked;
+  const lista = state.servidores
+    .filter(s=> todos || (s.actividades||[]).includes(key))
+    .filter(s=> !q || s.nombre.toLowerCase().includes(q));
+  if(!lista.length){
+    $("pickerList").innerHTML = `<div class="empty-state"><strong>Nadie disponible con este filtro</strong>Probá "Mostrar todos" o cargá servidores con esta actividad.</div>`;
+    return;
+  }
+  $("pickerList").innerHTML = lista.map(s=>{
+    const conf = conflictoDe(s.id, state.sheetReunionId);
+    const enEste = conf===key;
+    const dis = conf ? "disabled" : "";
+    const estado = enEste ? "ya asignado acá"
+      : conf ? "ocupado en "+escapeHtml(nombreActividad(conf))
+      : "disponible";
+    return `<button class="picker-row" ${dis} onclick="asignar('${s.id}')">
+      <span class="pname">${escapeHtml(s.nombre)}</span>
+      <span class="pstate${conf?" conf":""}">${estado}</span></button>`;
+  }).join("");
+}
+
+window.asignar = async function(servidorId){
+  const {areaId, actId}=state.picker;
+  const key=slotKey(areaId,actId);
+  const reunionId = state.sheetReunionId;
+  if(!puedeEditarArea(areaId)){ toast("No tenés permiso sobre esta área", true); return; }
+  const ref = db.collection("asignaciones").doc(reunionId);
+  try{
+    await db.runTransaction(async tx=>{
+      const snap = await tx.get(ref);
+      const slots = snap.exists ? (snap.data().slots||{}) : {};
+      for(const k in slots){
+        if((slots[k]||[]).includes(servidorId))
+          throw new Error("CONFLICTO:"+k);
+      }
+      const arr = slots[key]||[];
+      arr.push(servidorId);
+      tx.set(ref, {mes:state.mes, slots:{...slots, [key]:arr}}, {merge:true});
+    });
+    $("pickerOverlay").classList.remove("open");
+    toast("Asignado: "+(servidor(servidorId)?.nombre||""));
+  }catch(e){
+    if(String(e.message).startsWith("CONFLICTO:")){
+      const k=e.message.slice(10);
+      toast("Recién lo asignaron en "+nombreActividad(k)+". No se puede duplicar.", true);
+      renderPicker();
+    }else toast("No se pudo asignar: "+e.message, true);
+  }
+};
+
+window.quitarAsignacion = async function(key, servidorId){
+  const areaId = key.split(".")[0];
+  if(!puedeEditarArea(areaId)){ toast("No tenés permiso sobre esta área", true); return; }
+  const s=servidor(servidorId);
+  if(!confirm("¿Quitar a "+(s?s.nombre:"este servidor")+" de "+nombreActividad(key)+"?")) return;
+  const ref = db.collection("asignaciones").doc(state.sheetReunionId);
+  await db.runTransaction(async tx=>{
+    const snap=await tx.get(ref);
+    if(!snap.exists) return;
+    const slots=snap.data().slots||{};
+    slots[key]=(slots[key]||[]).filter(id=>id!==servidorId);
+    tx.set(ref,{mes:state.mes, slots},{merge:true});
+  });
+  toast("Quitado");
+};
+
+/* ---------- Generar reuniones ---------- */
+$("btnGenerar").onclick = ()=>{
+  const [y,m]=state.mes.split("-").map(Number);
+  const ultimo=new Date(y,m,0).getDate();
+  const candidatas=[];
+  let sabIdx=0;
+  for(let d=1;d<=ultimo;d++){
+    const fecha = state.mes+"-"+String(d).padStart(2,"0");
+    const dow = fechaLocal(fecha).getDay();
+    if(dow===3) candidatas.push({fecha, hora:"17:00", titulo:"Miércoles", check:true});
+    if(dow===4) candidatas.push({fecha, hora:"20:00", titulo:"Jueves", check:true});
+    if(dow===6){ candidatas.push({fecha, hora:"20:00", titulo:"ADN Jóvenes", check: sabIdx%2===0}); sabIdx++; }
+    if(dow===0){["10:00","14:00","17:00"].forEach(h=>candidatas.push({fecha, hora:h, titulo:"Domingo", check:true}));}
+  }
+  const existentes = new Set(state.reuniones.map(r=>r.id));
+  $("genList").innerHTML = candidatas.map((c,i)=>{
+    const id = c.fecha+"_"+c.hora.replace(":","");
+    const ya = existentes.has(id);
+    return `<label class="check-item" style="grid-column:1/-1">
+      <input type="checkbox" data-i="${i}" ${ya?"disabled":c.check?"checked":""}>
+      <span class="mono" style="font-size:12px">${c.fecha.slice(8)}/${c.fecha.slice(5,7)} ${c.hora}</span>
+      <span style="flex:1">${escapeHtml(c.titulo)}</span>
+      ${ya?'<span class="mono" style="font-size:11px;color:var(--ink-faint)">ya creada</span>':""}
+    </label>`;
+  }).join("");
+  state.genCandidatas=candidatas;
+  $("genOverlay").classList.add("open");
+};
+
+$("btnGenConfirm").onclick = async ()=>{
+  const marcadas=[...$("genList").querySelectorAll("input:checked:not(:disabled)")].map(i=>state.genCandidatas[+i.dataset.i]);
+  if(!marcadas.length){ toast("No hay reuniones marcadas", true); return; }
+  const batch=db.batch();
+  marcadas.forEach(c=>{
+    const id=c.fecha+"_"+c.hora.replace(":","");
+    batch.set(db.collection("reuniones").doc(id), {fecha:c.fecha, hora:c.hora, titulo:c.titulo, mes:state.mes});
+  });
+  await batch.commit();
+  $("genOverlay").classList.remove("open");
+  toast(marcadas.length+" reuniones creadas");
+};
+
+$("btnAddReunion").onclick = ()=>{ $("rTitulo").value=""; $("rFecha").value=state.mes+"-01"; $("reuOverlay").classList.add("open"); };
+$("btnSaveReunion").onclick = async ()=>{
+  const titulo=$("rTitulo").value.trim(), fecha=$("rFecha").value, hora=$("rHora").value;
+  if(!titulo||!fecha||!hora){ toast("Completá nombre, fecha y hora", true); return; }
+  const id=fecha+"_"+hora.replace(":","");
+  await db.collection("reuniones").doc(id).set({fecha, hora, titulo, mes:fecha.slice(0,7), especial:true});
+  $("reuOverlay").classList.remove("open");
+  if(fecha.slice(0,7)!==state.mes){ state.mes=fecha.slice(0,7); renderMesLabel(); suscribirMes(); }
+  toast("Reunión creada");
+};
+
+/* ---------- Servidores ---------- */
+$("servSearch").oninput=renderServidores;
+function renderServidores(){
+  const q=$("servSearch").value.toLowerCase();
+  const lista = state.servidores.filter(s=>{
+    if(!q) return true;
+    const acts=(s.actividades||[]).map(nombreActividad).join(" ").toLowerCase();
+    return s.nombre.toLowerCase().includes(q)||acts.includes(q);
+  });
+  if(!lista.length){
+    $("servList").innerHTML=`<div class="row-item"><div class="row-main"><div class="row-title">Sin resultados</div><div class="row-sub">Agregá servidores con "+ Servidor" o importá un CSV.</div></div></div>`;
+    return;
+  }
+  $("servList").innerHTML=lista.map(s=>`
+    <div class="row-item">
+      <div class="row-main">
+        <div class="row-title">${escapeHtml(s.nombre)}</div>
+        <div class="row-sub">${(s.actividades||[]).map(k=>`<span class="tag">${escapeHtml(nombreActividad(k))}</span>`).join("")||"Sin actividades asignadas"}</div>
+      </div>
+      <div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarServidor('${s.id}')">Editar</button></div>
+    </div>`).join("");
+}
+
+function renderChecksActividades(cont, seleccionadas){
+  cont.innerHTML = state.areas.map(a=>a.actividades.map(ac=>{
+    const key=slotKey(a.id,ac.id);
+    return `<label class="check-item"><input type="checkbox" value="${key}" ${seleccionadas.includes(key)?"checked":""}><span>${escapeHtml(a.nombre)}: ${escapeHtml(ac.nombre)}</span></label>`;
+  }).join("")).join("");
+}
+
+$("btnNuevoServ").onclick=()=>{
+  state.editServId=null;
+  $("servModalTitle").textContent="Nuevo servidor";
+  $("fNombre").value=$("fEmail").value=$("fTelefono").value="";
+  $("btnDelServ").style.display="none";
+  renderChecksActividades($("fActividades"), []);
+  $("servOverlay").classList.add("open");
+};
+window.editarServidor=function(id){
+  const s=servidor(id); if(!s) return;
+  state.editServId=id;
+  $("servModalTitle").textContent="Editar servidor";
+  $("fNombre").value=s.nombre||""; $("fEmail").value=s.email||""; $("fTelefono").value=s.telefono||"";
+  $("btnDelServ").style.display = esAdmin() ? "" : "none";
+  renderChecksActividades($("fActividades"), s.actividades||[]);
+  $("servOverlay").classList.add("open");
+};
+$("btnSaveServ").onclick=async ()=>{
+  const nombre=$("fNombre").value.trim();
+  if(!nombre){ toast("El nombre es obligatorio", true); return; }
+  const data={
+    nombre, email:$("fEmail").value.trim(), telefono:$("fTelefono").value.trim(),
+    actividades:[...$("fActividades").querySelectorAll("input:checked")].map(i=>i.value)
+  };
+  if(state.editServId) await db.collection("servidores").doc(state.editServId).set(data,{merge:true});
+  else await db.collection("servidores").add(data);
+  $("servOverlay").classList.remove("open");
+  toast("Guardado: "+nombre);
+};
+$("btnDelServ").onclick=async ()=>{
+  const s=servidor(state.editServId);
+  if(!confirm("¿Eliminar a "+s.nombre+"? Sus asignaciones pasadas quedan como '(eliminado)'.")) return;
+  await db.collection("servidores").doc(state.editServId).delete();
+  $("servOverlay").classList.remove("open");
+  toast("Servidor eliminado");
+};
+
+/* ---------- CSV: plantilla, export, import ---------- */
+function descargarCSV(nombre, filas){
+  const csv = filas.map(f=>f.map(c=>{
+    c=String(c==null?"":c);
+    return /[",\n]/.test(c) ? '"'+c.replace(/"/g,'""')+'"' : c;
+  }).join(",")).join("\n");
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=nombre; a.click();
+  URL.revokeObjectURL(a.href);
+}
+$("btnPlantilla").onclick=()=>{
+  descargarCSV("plantilla-servidores.csv",[
+    ["Nombre","Email","Telefono","Actividades"],
+    ["Juan Pérez","juan@ejemplo.com","1122334455","Sonido: Sonidista principal | Video: Camarógrafo"],
+    ["María Gómez","","","Fotografía: Fotógrafo"]
+  ]);
+};
+$("btnExportServ").onclick=()=>{
+  descargarCSV("servidores.csv",[["Nombre","Email","Telefono","Actividades"],
+    ...state.servidores.map(s=>[s.nombre,s.email||"",s.telefono||"",(s.actividades||[]).map(nombreActividad).join(" | ")])]);
+};
+$("btnExportPlan").onclick=()=>{
+  const filas=[["Fecha","Hora","Reunión","Área","Actividad","Servidor"]];
+  state.reuniones.forEach(r=>{
+    const slots=state.asignaciones[r.id]?.slots||{};
+    state.areas.forEach(a=>a.actividades.forEach(ac=>{
+      (slots[slotKey(a.id,ac.id)]||[]).forEach(sid=>{
+        filas.push([r.fecha,r.hora,r.titulo,a.nombre,ac.nombre,servidor(sid)?.nombre||"(eliminado)"]);
+      });
+    }));
+  });
+  descargarCSV("planificacion-"+state.mes+".csv", filas);
+};
+
+function parseCSV(text){
+  const filas=[]; let fila=[], celda="", enComillas=false;
+  text=text.replace(/^\uFEFF/,"");
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(enComillas){
+      if(c==='"'){ if(text[i+1]==='"'){celda+='"';i++;} else enComillas=false; }
+      else celda+=c;
+    }else{
+      if(c==='"') enComillas=true;
+      else if(c===","){ fila.push(celda); celda=""; }
+      else if(c==="\n"||c==="\r"){ if(c==="\r"&&text[i+1]==="\n")i++; fila.push(celda); if(fila.some(x=>x.trim())) filas.push(fila); fila=[]; celda=""; }
+      else celda+=c;
+    }
+  }
+  fila.push(celda); if(fila.some(x=>x.trim())) filas.push(fila);
+  return filas;
+}
+function matchActividad(texto){
+  // acepta "Área: Actividad" y matchea por nombre, sin importar mayúsculas/acentos
+  const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  const partes=texto.split(":");
+  const areaTxt=norm(partes[0]||""), actTxt=norm(partes.slice(1).join(":")||"");
+  for(const a of state.areas){
+    if(norm(a.nombre)!==areaTxt) continue;
+    for(const ac of a.actividades){
+      if(norm(ac.nombre)===actTxt || (!actTxt)) return slotKey(a.id,ac.id);
+    }
+  }
+  return null;
+}
+$("btnImport").onclick=()=>{ $("impFile").value=""; $("impPreview").innerHTML=""; $("btnImpConfirm").disabled=true; state.importRows=null; $("impOverlay").classList.add("open"); };
+$("impFile").onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const filas=parseCSV(await file.text());
+  if(filas.length<2){ $("impPreview").innerHTML='<p class="section-note">El archivo no tiene datos debajo del encabezado.</p>'; return; }
+  const head=filas[0].map(h=>h.toLowerCase().trim());
+  const col=n=>head.findIndex(h=>h.startsWith(n));
+  const iN=col("nombre"), iE=col("email"), iT=col("tel"), iA=col("actividad");
+  if(iN<0){ $("impPreview").innerHTML='<p class="section-note" style="color:var(--danger)">Falta la columna "Nombre". Descargá la plantilla para ver el formato.</p>'; return; }
+  const rows=[]; const noMatch=[];
+  filas.slice(1).forEach(f=>{
+    const nombre=(f[iN]||"").trim(); if(!nombre) return;
+    const acts=[];
+    if(iA>=0 && f[iA]) f[iA].split("|").forEach(t=>{
+      t=t.trim(); if(!t) return;
+      const k=matchActividad(t);
+      if(k) acts.push(k); else noMatch.push(nombre+" → "+t);
+    });
+    rows.push({nombre, email:iE>=0?(f[iE]||"").trim():"", telefono:iT>=0?(f[iT]||"").trim():"", actividades:[...new Set(acts)]});
+  });
+  state.importRows=rows;
+  $("impPreview").innerHTML = `<p class="section-note"><strong>${rows.length}</strong> servidores listos para importar.${noMatch.length?`<br><span style="color:var(--danger)">Actividades no reconocidas (se ignoran): ${escapeHtml(noMatch.slice(0,5).join(" · "))}${noMatch.length>5?" y más…":""}</span>`:""}</p>`;
+  $("btnImpConfirm").disabled = !rows.length;
+};
+$("btnImpConfirm").onclick=async ()=>{
+  const rows=state.importRows||[];
+  $("btnImpConfirm").disabled=true;
+  $("btnImpConfirm").innerHTML='<span class="spinner"></span>';
+  const porNombre={}; state.servidores.forEach(s=>porNombre[s.nombre.toLowerCase()]=s.id);
+  let nuevos=0, actualizados=0;
+  const batch=db.batch();
+  rows.forEach(r=>{
+    const id=porNombre[r.nombre.toLowerCase()];
+    if(id){ batch.set(db.collection("servidores").doc(id), r, {merge:true}); actualizados++; }
+    else{ batch.set(db.collection("servidores").doc(), r); nuevos++; }
+  });
+  await batch.commit();
+  $("impOverlay").classList.remove("open");
+  $("btnImpConfirm").innerHTML="Importar";
+  toast(nuevos+" nuevos, "+actualizados+" actualizados");
+};
+
+/* ---------- Áreas ---------- */
+function renderAreas(){
+  if(!esAdmin()) return;
+  $("areasList").innerHTML = `<div class="list-card">`+state.areas.map(a=>`
+    <div class="row-item">
+      <div class="row-main">
+        <div class="row-title">${escapeHtml(a.nombre)}</div>
+        <div class="row-sub">${a.actividades.map(ac=>escapeHtml(ac.nombre)+" ("+ac.cupo+")").join(" · ")}</div>
+      </div>
+      <div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarArea('${a.id}')">Editar</button></div>
+    </div>`).join("")+`</div>`;
+}
+function filaAct(ac){
+  return `<div style="display:flex;gap:6px;margin-bottom:6px" class="a-act">
+    <input type="text" placeholder="Actividad" value="${escapeHtml(ac?.nombre||"")}" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper)">
+    <input type="number" min="1" max="20" value="${ac?.cupo||1}" title="Puestos" style="width:64px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--paper)">
+    <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()">✕</button></div>`;
+}
+$("btnNuevaArea").onclick=()=>{
+  state.editAreaId=null;
+  $("areaModalTitle").textContent="Nueva área";
+  $("aNombre").value=""; $("aActs").innerHTML=filaAct(null);
+  $("btnDelArea").style.display="none";
+  $("areaOverlay").classList.add("open");
+};
+window.editarArea=function(id){
+  const a=area(id); if(!a) return;
+  state.editAreaId=id;
+  $("areaModalTitle").textContent="Editar: "+a.nombre;
+  $("aNombre").value=a.nombre;
+  $("aActs").innerHTML=a.actividades.map(filaAct).join("");
+  $("aActs").querySelectorAll(".a-act").forEach((el,i)=>el.dataset.actId=a.actividades[i].id);
+  $("btnDelArea").style.display="";
+  $("areaOverlay").classList.add("open");
+};
+$("btnAddAct").onclick=()=>$("aActs").insertAdjacentHTML("beforeend", filaAct(null));
+$("btnSaveArea").onclick=async ()=>{
+  const nombre=$("aNombre").value.trim();
+  if(!nombre){ toast("Poné un nombre al área", true); return; }
+  const actividades=[...$("aActs").querySelectorAll(".a-act")].map(el=>{
+    const [inN,inC]=el.querySelectorAll("input");
+    const n=inN.value.trim(); if(!n) return null;
+    return {id: el.dataset.actId || slug(n), nombre:n, cupo:Math.max(1,+inC.value||1)};
+  }).filter(Boolean);
+  if(!actividades.length){ toast("Agregá al menos una actividad", true); return; }
+  const id = state.editAreaId || slug(nombre);
+  const orden = state.editAreaId ? area(id).orden : (Math.max(0,...state.areas.map(a=>a.orden||0))+1);
+  await db.collection("areas").doc(id).set({nombre, orden, actividades});
+  $("areaOverlay").classList.remove("open");
+  toast("Área guardada");
+};
+$("btnDelArea").onclick=async ()=>{
+  const a=area(state.editAreaId);
+  if(!confirm("¿Eliminar el área "+a.nombre+"? Las asignaciones existentes de esta área dejan de mostrarse.")) return;
+  await db.collection("areas").doc(state.editAreaId).delete();
+  $("areaOverlay").classList.remove("open");
+  toast("Área eliminada");
+};
+
+/* ---------- Usuarios ---------- */
+function renderUsuarios(){
+  if(!esAdmin()||!state.usuarios) return;
+  const adminsFijos=ADMIN_EMAILS.map(e=>e.toLowerCase());
+  $("usersList").innerHTML = state.usuarios.map(u=>{
+    const fijo=adminsFijos.includes((u.email||"").toLowerCase());
+    const areasChecks = state.areas.map(a=>
+      `<label class="check-item" style="display:inline-flex;margin:2px 4px 0 0"><input type="checkbox" value="${a.id}" ${(u.areas||[]).includes(a.id)?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioArea('${u.id}',this)"><span>${escapeHtml(a.nombre)}</span></label>`).join("");
+    return `<div class="row-item" style="flex-wrap:wrap">
+      <div class="row-main" style="flex:1;min-width:200px">
+        <div class="row-title">${escapeHtml(u.nombre||u.email)}</div>
+        <div class="row-sub">${escapeHtml(u.email||"")}</div>
+        <div style="margin-top:6px">${fijo?'<span class="tag">Admin fijo (configurado en el archivo)</span>':areasChecks}</div>
+      </div>
+      <div class="row-actions">
+        <select ${fijo?"disabled":""} onchange="setUsuarioRol('${u.id}',this.value)" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper)">
+          ${["pendiente","lider","admin"].map(r=>`<option value="${r}" ${(fijo?"admin":u.rol)===r?"selected":""}>${r==="lider"?"líder":r}</option>`).join("")}
+        </select>
+      </div></div>`;
+  }).join("") || '<div class="row-item"><div class="row-main"><div class="row-title">Todavía no ingresó nadie más</div><div class="row-sub">Pasales el link de la app: al entrar con Google van a aparecer acá para que los apruebes.</div></div></div>';
+}
+window.setUsuarioRol=async (id,rol)=>{ await db.collection("usuarios").doc(id).update({rol}); toast("Rol actualizado"); };
+window.setUsuarioArea=async (id,input)=>{
+  const u=state.usuarios.find(x=>x.id===id);
+  let areas=new Set(u.areas||[]);
+  input.checked ? areas.add(input.value) : areas.delete(input.value);
+  await db.collection("usuarios").doc(id).update({areas:[...areas]});
+};
+
+/* ---------- Carga del mes ---------- */
+function renderStats(){
+  const conteo={};
+  state.reuniones.forEach(r=>{
+    const slots=state.asignaciones[r.id]?.slots||{};
+    for(const key in slots)(slots[key]||[]).forEach(sid=>{
+      conteo[sid]=conteo[sid]||{total:0, areas:{}};
+      conteo[sid].total++;
+      const a=key.split(".")[0];
+      conteo[sid].areas[a]=(conteo[sid].areas[a]||0)+1;
+    });
+  });
+  const filas=Object.entries(conteo)
+    .map(([sid,c])=>({s:servidor(sid), ...c}))
+    .filter(x=>x.s)
+    .sort((a,b)=>b.total-a.total);
+  if(!filas.length){
+    $("statsTable").innerHTML=`<div class="empty-state"><strong>Sin asignaciones en ${escapeHtml(mesLabel(state.mes))}</strong>Cuando asignes servidores en Planificación, acá vas a ver la carga de cada uno.</div>`;
+    return;
+  }
+  $("statsTable").innerHTML=`<table class="stats"><thead><tr><th>Servidor</th><th>Veces</th><th>Detalle</th></tr></thead><tbody>`+
+    filas.map(f=>`<tr>
+      <td><strong>${escapeHtml(f.s.nombre)}</strong></td>
+      <td><span class="load-pill ${f.total>=UMBRAL_CARGA?"load-hi":"load-ok"}">${f.total}</span></td>
+      <td style="font-size:13px;color:var(--ink-soft)">${Object.entries(f.areas).map(([a,n])=>escapeHtml(area(a)?.nombre||a)+" ×"+n).join(" · ")}</td>
+    </tr>`).join("")+`</tbody></table>`;
+}
+
+/* ---------- Cierre de modales genérico ---------- */
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove("open"));
+document.querySelectorAll(".modal-overlay").forEach(o=>o.addEventListener("click", e=>{ if(e.target===o) o.classList.remove("open"); }));
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ document.querySelectorAll(".modal-overlay.open").forEach(o=>o.classList.remove("open")); cerrarSheet(); }});
+</script>
+</body>
+</html>
