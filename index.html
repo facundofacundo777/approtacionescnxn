@@ -714,6 +714,7 @@ if(!configOk){
   firebase.initializeApp(firebaseConfig);
   auth = firebase.auth();
   db = firebase.firestore();
+  auth.getRedirectResult().catch(e=>toast(mensajeAuth(e), true));
 
   auth.onAuthStateChanged(async user=>{
     if(!user){ mostrar("loginScreen"); return; }
@@ -831,7 +832,28 @@ function suscribirMes(){
 function renderTodo(){ renderPlan(); renderServidores(); renderAreas(); renderStats(); renderAdo(); if(state.notas) renderNotas(); if(state.sheetReunionId) renderSheet(); }
 
 /* ---------- Login / logout ---------- */
-$("btnLogin").onclick = ()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast(e.message,true));
+$("btnLogin").onclick = async ()=>{
+  const prov = new firebase.auth.GoogleAuthProvider();
+  try{
+    await auth.signInWithPopup(prov);
+  }catch(e){
+    if(e.code==="auth/popup-closed-by-user" || e.code==="auth/cancelled-popup-request") return;
+    if(e.code==="auth/popup-blocked" || e.code==="auth/operation-not-supported-in-this-environment"){
+      try{ await auth.signInWithRedirect(prov); }
+      catch(e2){ toast(mensajeAuth(e2), true); }
+    } else toast(mensajeAuth(e), true);
+  }
+};
+function mensajeAuth(e){
+  const msg=String((e&&e.message)||e||"");
+  if((e&&e.code==="auth/missing-initial-state") || msg.includes("missing initial state"))
+    return "Tu navegador está bloqueando el login de Google. Abrí la app directamente en Chrome o Safari (no desde el navegador de WhatsApp/Instagram ni en modo incógnito) y probá de nuevo.";
+  if(e&&e.code==="auth/unauthorized-domain")
+    return "Este dominio no está autorizado en Firebase (Authentication → Settings → Dominios autorizados).";
+  if(e&&e.code==="auth/network-request-failed")
+    return "Sin conexión. Revisá tu internet y probá de nuevo.";
+  return "No se pudo iniciar sesión: "+msg;
+}
 $("btnLogout").onclick = ()=>{ state.unsubs.forEach(u=>u()); unsubMes.forEach(u=>u()); location.reload(); auth.signOut(); };
 $("btnLogoutPending").onclick = ()=>auth.signOut().then(()=>location.reload());
 
