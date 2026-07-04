@@ -1148,10 +1148,17 @@ function renderUsuarios(){
         <select ${fijo?"disabled":""} onchange="setUsuarioRol('${u.id}',this.value)" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper)">
           ${["pendiente","lider","admin"].map(r=>`<option value="${r}" ${(fijo?"admin":u.rol)===r?"selected":""}>${r==="lider"?"líder":r}</option>`).join("")}
         </select>
+        ${fijo?"":`<button class="btn btn-danger btn-sm" title="Eliminar usuario" onclick="delUsuario('${u.id}')">✕</button>`}
       </div></div>`;
   }).join("") || '<div class="row-item"><div class="row-main"><div class="row-title">Todavía no ingresó nadie más</div><div class="row-sub">Pasales el link de la app: al entrar con Google van a aparecer acá para que los apruebes.</div></div></div>';
 }
 window.setUsuarioRol=async (id,rol)=>{ await db.collection("usuarios").doc(id).update({rol}); toast("Rol actualizado"); };
+window.delUsuario=async id=>{
+  const u=state.usuarios.find(x=>x.id===id);
+  if(!confirm("¿Eliminar el acceso de "+(u?.nombre||u?.email||"este usuario")+"? Si vuelve a ingresar con Google, queda como pendiente hasta que lo apruebes de nuevo.")) return;
+  await db.collection("usuarios").doc(id).delete();
+  toast("Usuario eliminado");
+};
 window.setUsuarioArea=async (id,input)=>{
   const u=state.usuarios.find(x=>x.id===id);
   let areas=new Set(u.areas||[]);
