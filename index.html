@@ -607,7 +607,12 @@ function suscribirMes(){
   }));
   unsubMes.push(db.collection("asignaciones").where("mes","==",state.mes).onSnapshot(s=>{
     state.asignaciones={};
-    s.docs.forEach(d=>state.asignaciones[d.id]=d.data());
+    s.docs.forEach(d=>{
+      const x=d.data();
+      if(!x.reunionId || !x.areaId) return;
+      const r = state.asignaciones[x.reunionId] = state.asignaciones[x.reunionId]||{slots:{}};
+      for(const act in (x.slots||{})) r.slots[x.areaId+"."+act]=x.slots[act];
+    });
     renderPlan(); renderStats();
     if(state.sheetReunionId) renderSheet();
   }));
@@ -736,8 +741,11 @@ function renderSheet(){
 $("btnDelReunion").onclick = async ()=>{
   const r = state.reuniones.find(x=>x.id===state.sheetReunionId);
   if(!r || !confirm("¿Eliminar la reunión "+r.titulo+" del "+fmtFecha(r.fecha)+"? Se pierden sus asignaciones.")) return;
-  await db.collection("reuniones").doc(r.id).delete();
-  await db.collection("asignaciones").doc(r.id).delete().catch(()=>{});
+  const asigs = await db.collection("asignaciones").where("reunionId","==",r.id).get();
+  const batch = db.batch();
+  asigs.docs.forEach(d=>batch.delete(d.ref));
+  batch.delete(db.collection("reuniones").doc(r.id));
+  await batch.commit();
   cerrarSheet(); toast("Reunión eliminada");
 };
 
@@ -786,21 +794,26 @@ function renderPicker(){
 
 window.asignar = async function(servidorId){
   const {areaId, actId}=state.picker;
-  const key=slotKey(areaId,actId);
   const reunionId = state.sheetReunionId;
   if(!puedeEditarArea(areaId)){ toast("No tenés permiso sobre esta área", true); return; }
-  const ref = db.collection("asignaciones").doc(reunionId);
+  const areas = state.areas;
+  const refs = areas.map(a=>db.collection("asignaciones").doc(reunionId+"__"+a.id));
   try{
     await db.runTransaction(async tx=>{
-      const snap = await tx.get(ref);
-      const slots = snap.exists ? (snap.data().slots||{}) : {};
-      for(const k in slots){
-        if((slots[k]||[]).includes(servidorId))
-          throw new Error("CONFLICTO:"+k);
-      }
-      const arr = slots[key]||[];
+      const snaps = await Promise.all(refs.map(r=>tx.get(r)));
+      snaps.forEach((snap,i)=>{
+        if(!snap.exists) return;
+        const sl = snap.data().slots||{};
+        for(const k in sl){
+          if((sl[k]||[]).includes(servidorId))
+            throw new Error("CONFLICTO:"+areas[i].id+"."+k);
+        }
+      });
+      const idx = areas.findIndex(a=>a.id===areaId);
+      const cur = snaps[idx].exists ? (snaps[idx].data().slots||{}) : {};
+      const arr = (cur[actId]||[]).slice();
       arr.push(servidorId);
-      tx.set(ref, {mes:state.mes, slots:{...slots, [key]:arr}}, {merge:true});
+      tx.set(refs[idx], {mes:state.mes, reunionId, areaId, slots:{...cur, [actId]:arr}}, {merge:true});
     });
     $("pickerOverlay").classList.remove("open");
     toast("Asignado: "+(servidor(servidorId)?.nombre||""));
@@ -814,17 +827,18 @@ window.asignar = async function(servidorId){
 };
 
 window.quitarAsignacion = async function(key, servidorId){
-  const areaId = key.split(".")[0];
+  const [areaId, actId] = key.split(".");
   if(!puedeEditarArea(areaId)){ toast("No tenés permiso sobre esta área", true); return; }
   const s=servidor(servidorId);
   if(!confirm("¿Quitar a "+(s?s.nombre:"este servidor")+" de "+nombreActividad(key)+"?")) return;
-  const ref = db.collection("asignaciones").doc(state.sheetReunionId);
+  const reunionId = state.sheetReunionId;
+  const ref = db.collection("asignaciones").doc(reunionId+"__"+areaId);
   await db.runTransaction(async tx=>{
     const snap=await tx.get(ref);
     if(!snap.exists) return;
     const slots=snap.data().slots||{};
-    slots[key]=(slots[key]||[]).filter(id=>id!==servidorId);
-    tx.set(ref,{mes:state.mes, slots},{merge:true});
+    slots[actId]=(slots[actId]||[]).filter(id=>id!==servidorId);
+    tx.set(ref,{mes:state.mes, reunionId, areaId, slots},{merge:true});
   });
   toast("Quitado");
 };
