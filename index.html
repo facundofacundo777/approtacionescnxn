@@ -229,6 +229,10 @@ table.stats tr:last-child td{border-bottom:none}
 .resp .nota-texto{font-size:13px}
 .resp-input{display:flex;gap:8px;margin-top:12px}
 .resp-input input{flex:1;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--paper);color:var(--ink)}
+.seg{display:flex;gap:4px;margin-left:auto}
+.seg .btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.nota.res{opacity:.75}
+.res-meta{font-size:12px;color:var(--ok);margin-top:8px;font-weight:600}
 </style>
 </head>
 <body>
@@ -337,7 +341,13 @@ table.stats tr:last-child td{border-bottom:none}
   <!-- Vista: Notas -->
   <section class="view" id="view-notas">
     <p class="section-note">Espacio interno para dejar observaciones sobre servidores o temas del equipo — pedidos de reemplazo frecuentes, situaciones personales a tener en cuenta, avisos. Lo ven todos los líderes aprobados: usalo con criterio pastoral.</p>
-    <div class="toolbar"><button class="btn btn-primary btn-sm" id="btnNuevaNota">+ Nueva nota</button></div>
+    <div class="toolbar">
+      <button class="btn btn-primary btn-sm" id="btnNuevaNota">+ Nueva nota</button>
+      <div class="seg">
+        <button class="btn btn-ghost btn-sm on" id="segPend" onclick="setNotasFiltro('pendientes')">Pendientes</button>
+        <button class="btn btn-ghost btn-sm" id="segRes" onclick="setNotasFiltro('resueltas')">Resueltas</button>
+      </div>
+    </div>
     <div id="notasList"></div>
   </section>
 
@@ -1401,7 +1411,7 @@ function renderInicio(){
     <div class="stat-card"><div class="stat-num">${proximas.length}</div><div class="stat-label">Reuniones por delante en ${escapeHtml(mesLabel(state.mes))}</div></div>
     <div class="stat-card"><div class="stat-num${vacantes?" alert":""}">${vacantes}</div><div class="stat-label">Puestos sin cubrir</div></div>
     <div class="stat-card"><div class="stat-num">${state.servidores.length}</div><div class="stat-label">Servidores cargados</div></div>
-    <div class="stat-card"><div class="stat-num">${(state.notas||[]).length}</div><div class="stat-label">Notas del equipo</div></div>`;
+    <div class="stat-card"><div class="stat-num${(state.notas||[]).some(n=>!n.resuelta)?" alert":""}">${(state.notas||[]).filter(n=>!n.resuelta).length}</div><div class="stat-label">Notas pendientes</div></div>`;
   $("inicioProximas").innerHTML = proximas.length ? proximas.slice(0,6).map(r=>{
     const n=cubiertos(r.id);
     const slots=state.asignaciones[r.id]?.slots||{};
@@ -1431,7 +1441,7 @@ $("btnSaveNota").onclick=async ()=>{
   const texto=$("nTexto").value.trim();
   if(!texto){ toast("Escribí la nota", true); return; }
   await db.collection("notas").add({
-    servidorId: $("nTema").value||null, texto,
+    servidorId: $("nTema").value||null, texto, resuelta:false,
     autorUid: state.user.uid, autorNombre: state.user.displayName||state.user.email,
     creado: firebase.firestore.FieldValue.serverTimestamp(), respuestas: []
   });
@@ -1443,35 +1453,61 @@ function fmtTs(ts){
   if(!d) return "";
   return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
 }
+let notasFiltro="pendientes";
+window.setNotasFiltro=f=>{
+  notasFiltro=f;
+  $("segPend").classList.toggle("on", f==="pendientes");
+  $("segRes").classList.toggle("on", f==="resueltas");
+  renderNotas();
+};
 function renderNotas(){
-  const notas=state.notas||[];
+  const todas=state.notas||[];
+  const pend=todas.filter(n=>!n.resuelta);
+  const res=todas.filter(n=>n.resuelta);
+  $("segPend").textContent="Pendientes ("+pend.length+")";
+  $("segRes").textContent="Resueltas ("+res.length+")";
+  const notas = notasFiltro==="pendientes" ? pend : res;
   // preservar respuestas a medio escribir cuando llega una actualización
   const borradores={};
   document.querySelectorAll('[id^="resp-"]').forEach(i=>{ if(i.value) borradores[i.id]=i.value; });
   if(!notas.length){
-    $("notasList").innerHTML=`<div class="empty-state"><strong>Todavía no hay notas</strong>Usá "+ Nueva nota" para dejar la primera observación al equipo.</div>`;
+    $("notasList").innerHTML = notasFiltro==="pendientes"
+      ? `<div class="empty-state"><strong>No hay notas pendientes</strong>Todo al día. Usá "+ Nueva nota" para dejar una observación al equipo.</div>`
+      : `<div class="empty-state"><strong>No hay notas resueltas</strong>Cuando marques una nota como resuelta, se archiva acá.</div>`;
     return;
   }
   $("notasList").innerHTML=notas.map(n=>{
     const s=n.servidorId?servidor(n.servidorId):null;
     const puedeBorrar = esAdmin() || n.autorUid===state.user.uid;
-    return `<div class="nota">
+    return `<div class="nota${n.resuelta?" res":""}">
       <div class="nota-head">
         <div><span class="tag">${s?escapeHtml(s.nombre):"General"}</span> <strong style="font-size:13px">${escapeHtml(n.autorNombre||"")}</strong> <span class="nota-meta">${fmtTs(n.creado)}</span></div>
-        ${puedeBorrar?`<button class="btn btn-danger btn-sm" title="Eliminar nota" onclick="delNota('${n.id}')">✕</button>`:""}
+        <div style="display:flex;gap:6px">
+          ${n.resuelta
+            ? `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', false)">↺ Reabrir</button>`
+            : `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', true)">✓ Resolver</button>`}
+          ${puedeBorrar?`<button class="btn btn-danger btn-sm" title="Eliminar nota" onclick="delNota('${n.id}')">✕</button>`:""}
+        </div>
       </div>
       <div class="nota-texto">${escapeHtml(n.texto)}</div>
       ${(n.respuestas||[]).map(r=>`<div class="resp">
         <div><strong style="font-size:12px">${escapeHtml(r.autorNombre||"")}</strong> <span class="nota-meta">${fmtTs(r.creado)}</span></div>
         <div class="nota-texto">${escapeHtml(r.texto)}</div></div>`).join("")}
+      ${n.resuelta?`<div class="res-meta">✓ Resuelta por ${escapeHtml(n.resueltaPor||"")} · ${fmtTs(n.resueltaEl)}</div>`:`
       <div class="resp-input">
         <input type="text" id="resp-${n.id}" placeholder="Responder…" onkeydown="if(event.key==='Enter')responderNota('${n.id}')">
         <button class="btn btn-ghost btn-sm" onclick="responderNota('${n.id}')">Enviar</button>
-      </div>
+      </div>`}
     </div>`;
   }).join("");
   for(const id in borradores){ const i=$(id); if(i) i.value=borradores[id]; }
 }
+window.resolverNota=async (id, val)=>{
+  await db.collection("notas").doc(id).update(val
+    ? {resuelta:true, resueltaPor: state.user.displayName||state.user.email, resueltaEl: Date.now()}
+    : {resuelta:false, resueltaPor: firebase.firestore.FieldValue.delete(), resueltaEl: firebase.firestore.FieldValue.delete()});
+  toast(val ? "Nota resuelta" : "Nota reabierta");
+};
 window.responderNota=async id=>{
   const inp=$("resp-"+id);
   const texto=(inp.value||"").trim();
