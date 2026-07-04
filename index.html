@@ -233,6 +233,16 @@ table.stats tr:last-child td{border-bottom:none}
 .seg .btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .nota.res{opacity:.75}
 .res-meta{font-size:12px;color:var(--ok);margin-top:8px;font-weight:600}
+
+/* ---------- Adoración / setlist ---------- */
+.set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.set-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-faint);width:18px}
+.set-tit{font-weight:700;font-size:14px;flex:1;min-width:140px}
+.set-art{font-size:12px;font-weight:400;color:var(--ink-soft)}
+.set-in{width:82px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12px}
+.set-in.canta{width:130px;font-family:'Archivo',sans-serif}
+.mini{width:28px;height:28px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:13px;color:var(--ink);padding:0;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.warn-chip{display:inline-flex;align-items:center;gap:4px;background:var(--danger-soft);color:var(--danger);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;margin:2px 0}
 </style>
 </head>
 <body>
@@ -289,6 +299,7 @@ table.stats tr:last-child td{border-bottom:none}
       <button class="tab active" data-view="inicio">Inicio</button>
       <button class="tab" data-view="plan">Planificación</button>
       <button class="tab" data-view="servidores">Servidores</button>
+      <button class="tab" data-view="adoracion">Adoración</button>
       <button class="tab" data-view="notas">Notas</button>
       <button class="tab" data-view="stats">Carga del mes</button>
       <button class="tab" data-view="areas" data-admin="1">Áreas</button>
@@ -336,6 +347,25 @@ table.stats tr:last-child td{border-bottom:none}
   <section class="view" id="view-stats">
     <p class="section-note">Cantidad de asignaciones por servidor en el mes seleccionado en Planificación. Sirve para detectar quién está sobrecargado y quién puede servir más.</p>
     <div id="statsTable"></div>
+  </section>
+
+  <!-- Vista: Adoración -->
+  <section class="view" id="view-adoracion">
+    <div class="toolbar">
+      <div class="seg" style="margin-left:0">
+        <button class="btn btn-ghost btn-sm on" id="segBandas" onclick="setAdoTab('bandas')">Bandas</button>
+        <button class="btn btn-ghost btn-sm" id="segCanc" onclick="setAdoTab('canciones')">Canciones</button>
+      </div>
+      <span style="flex:1"></span>
+      <span id="adoBtnB"><button class="btn btn-primary btn-sm" id="btnNuevaBanda">+ Banda</button></span>
+      <span id="adoBtnC" style="display:none">
+        <button class="btn btn-ghost btn-sm" id="btnPlantillaCanc">Plantilla CSV</button>
+        <button class="btn btn-ghost btn-sm" id="btnImportCanc">Importar</button>
+        <button class="btn btn-ghost btn-sm" id="btnExportCanc">Exportar</button>
+        <button class="btn btn-primary btn-sm" id="btnNuevaCanc">+ Canción</button>
+      </span>
+    </div>
+    <div id="adoBody"></div>
   </section>
 
   <!-- Vista: Notas -->
@@ -502,6 +532,79 @@ table.stats tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- ===== Modal: banda ===== -->
+<div class="modal-overlay" id="bandaOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="bandaModalTitle">Banda</h3><button class="close-x" data-close="bandaOverlay">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre de la banda</label><input type="text" id="bNombre" placeholder="Ej: Banda 1"></div>
+      <div class="field"><label>Integrantes (servidor + rol)</label><div id="bMiembros"></div>
+        <button class="btn btn-ghost btn-sm" id="btnAddMiembro" style="margin-top:8px">+ Integrante</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="btnDelBanda" style="margin-right:auto;display:none">Eliminar</button>
+      <button class="btn btn-ghost" data-close="bandaOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveBanda">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: canción ===== -->
+<div class="modal-overlay" id="cancOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="cancModalTitle">Canción</h3><button class="close-x" data-close="cancOverlay">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Nombre</label><input type="text" id="cNombre"></div>
+      <div class="field"><label>Artista</label><input type="text" id="cArtista"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">
+        <div class="field"><label>Tipo</label><input type="text" id="cTipo" placeholder="Celebración / Intimidad…"></div>
+        <div class="field"><label>Recurrencia</label><select id="cRec"><option value=""></option><option>Alta</option><option>Media</option><option>Baja</option></select></div>
+        <div class="field"><label>BPM</label><input type="text" id="cBpm" placeholder="136 (4/4)"></div>
+        <div class="field"><label>Tono original</label><input type="text" id="cTono" placeholder="Bm"></div>
+        <div class="field"><label>TP Mujer</label><input type="text" id="cTpm"></div>
+        <div class="field"><label>TS Mujer</label><input type="text" id="cTsm"></div>
+        <div class="field"><label>TP Hombre</label><input type="text" id="cTph"></div>
+        <div class="field"><label>TS Hombre</label><input type="text" id="cTsh"></div>
+      </div>
+      <div class="field"><label>Link de referencia (YouTube / letra)</label><input type="text" id="cLink" placeholder="https://…"></div>
+      <label class="toggle-line"><input type="checkbox" id="cPista"> Tiene pista / secuencia</label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="btnDelCanc" style="margin-right:auto;display:none">Eliminar</button>
+      <button class="btn btn-ghost" data-close="cancOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveCanc">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: importar canciones ===== -->
+<div class="modal-overlay" id="impCancOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Importar canciones</h3><button class="close-x" data-close="impCancOverlay">✕</button></div>
+    <div class="modal-body">
+      <p class="section-note">Subí un CSV con las columnas <strong>Cancion, Artista, Tipo, Recurrencia, Pista, Bpm, Tono, TP-M, TS-M, TP-H, TS-H, Link</strong> (descargá la plantilla para ver el formato). Las canciones que ya existen (mismo nombre y artista) se actualizan.</p>
+      <div class="field"><input type="file" id="impCancFile" accept=".csv,text/csv"></div>
+      <div id="impCancPreview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close="impCancOverlay">Cancelar</button>
+      <button class="btn btn-primary" id="btnImpCancConfirm" disabled>Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: elegir canción ===== -->
+<div class="modal-overlay" id="cancPickerOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Agregar canción al setlist</h3><button class="close-x" data-close="cancPickerOverlay">✕</button></div>
+    <div class="modal-body">
+      <input class="search-box" id="cancPickerSearch" type="text" placeholder="Buscar canción o artista…">
+      <div class="picker-list" id="cancPickerList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Modal: copiar equipo ===== -->
 <div class="modal-overlay" id="copiarOverlay">
   <div class="modal">
@@ -577,6 +680,7 @@ $("btnTheme") && ($("btnTheme").onclick = ()=>{
 const state = {
   user:null, rol:null, misAreas:[],
   areas:[], servidores:[], reuniones:[], asignaciones:{},
+  bandas:[], canciones:[], adoracion:{},
   mes: new Date().toISOString().slice(0,7),
   unsubs:[], sheetReunionId:null,
   picker:null, editServId:null, editAreaId:null, importRows:null
@@ -657,6 +761,13 @@ async function seedAreas(){
     AREAS_DEFAULT.forEach(a=>batch.set(db.collection("areas").doc(a.id), a));
     await batch.commit();
   }
+  const ado = await db.collection("areas").doc("adoracion").get();
+  if(!ado.exists){
+    await db.collection("areas").doc("adoracion").set({
+      nombre:"Adoración", orden:0,
+      actividades:[{id:"cantante_adicional", nombre:"Cantante adicional", cupo:4}]
+    });
+  }
 }
 
 /* ---------- Suscripciones ---------- */
@@ -669,6 +780,14 @@ function suscribirGlobal(){
     state.servidores = s.docs.map(d=>({id:d.id, ...d.data()}));
     renderTodo();
   }));
+  state.unsubs.push(db.collection("bandas").orderBy("nombre").onSnapshot(s=>{
+    state.bandas = s.docs.map(d=>({id:d.id, ...d.data()}));
+    renderAdo(); renderPlan(); if(state.sheetReunionId) renderSheet();
+  }, e=>toast("Error al sincronizar bandas: "+e.message, true)));
+  state.unsubs.push(db.collection("canciones").orderBy("nombre").onSnapshot(s=>{
+    state.canciones = s.docs.map(d=>({id:d.id, ...d.data()}));
+    renderAdo(); if(state.sheetReunionId) renderSheet();
+  }, e=>toast("Error al sincronizar canciones: "+e.message, true)));
   state.unsubs.push(db.collection("notas").orderBy("creado","desc").limit(100).onSnapshot(s=>{
     state.notas = s.docs.map(d=>({id:d.id, ...d.data()}));
     renderNotas(); renderInicio();
@@ -684,7 +803,13 @@ function suscribirGlobal(){
 let unsubMes = [];
 function suscribirMes(){
   unsubMes.forEach(u=>u()); unsubMes=[];
-  state.reuniones=[]; state.asignaciones={};
+  state.reuniones=[]; state.asignaciones={}; state.adoracion={};
+  unsubMes.push(db.collection("adoracion").where("mes","==",state.mes).onSnapshot(s=>{
+    state.adoracion={};
+    s.docs.forEach(d=>state.adoracion[d.id]=d.data());
+    renderPlan();
+    if(state.sheetReunionId) renderSheet();
+  }, e=>toast("Error al sincronizar adoración: "+e.message, true)));
   unsubMes.push(db.collection("reuniones").where("mes","==",state.mes).onSnapshot(s=>{
     state.reuniones = s.docs.map(d=>({id:d.id, ...d.data()}))
       .sort((a,b)=> (a.fecha+a.hora).localeCompare(b.fecha+b.hora));
@@ -703,7 +828,7 @@ function suscribirMes(){
   }, e=>toast("Error al sincronizar asignaciones: "+e.message, true)));
 }
 
-function renderTodo(){ renderPlan(); renderServidores(); renderAreas(); renderStats(); if(state.notas) renderNotas(); if(state.sheetReunionId) renderSheet(); }
+function renderTodo(){ renderPlan(); renderServidores(); renderAreas(); renderStats(); renderAdo(); if(state.notas) renderNotas(); if(state.sheetReunionId) renderSheet(); }
 
 /* ---------- Login / logout ---------- */
 $("btnLogin").onclick = ()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast(e.message,true));
@@ -766,6 +891,8 @@ function renderPlan(){
     let segs=""; for(let i=0;i<total;i++) segs+=`<span class="cov-seg${i<n?" on":""}"></span>`;
     const badge = r.titulo==="ADN Jóvenes" ? '<span class="badge badge-adn">ADN</span>'
       : r.especial ? '<span class="badge badge-esp">Especial</span>' : "";
+    const ado=state.adoracion[r.id];
+    const bandaCard = ado&&ado.bandaId ? state.bandas.find(b=>b.id===ado.bandaId) : null;
     html += `<button class="meet-card" onclick="abrirReunion('${r.id}')">
       <div class="meet-head">
         <div><div class="meet-time">${r.hora}</div><div class="meet-date">${fmtFecha(r.fecha)}</div></div>
@@ -774,6 +901,7 @@ function renderPlan(){
       <div class="coverage">
         <div class="cov-track">${segs}</div>
         <div class="cov-meta"><span>${n}/${total}</span><span class="cov-state ${cls}">${txt}</span></div>
+        ${(bandaCard||ado?.setlist?.length)?`<div class="cov-meta"><span>♪ ${bandaCard?escapeHtml(bandaCard.nombre):"Sin banda"}</span><span>${ado?.setlist?.length||0} canciones</span></div>`:""}
       </div>
     </button>`;
   });
@@ -799,7 +927,7 @@ function renderSheet(){
   $("sheetSub").textContent = fmtFecha(r.fecha)+" de "+MESES[fechaLocal(r.fecha).getMonth()]+" · "+r.hora+" hs";
   $("btnDelReunion").style.display = esAdmin() ? "" : "none";
   const asig = state.asignaciones[r.id]?.slots || {};
-  let html="";
+  let html = renderSheetAdo(r);
   state.areas.forEach(a=>{
     const editable = puedeEditarArea(a.id);
     html += `<div class="area-block"><div class="area-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
@@ -830,6 +958,7 @@ $("btnDelReunion").onclick = async ()=>{
   const asigs = await db.collection("asignaciones").where("reunionId","==",r.id).get();
   const batch = db.batch();
   asigs.docs.forEach(d=>batch.delete(d.ref));
+  batch.delete(db.collection("adoracion").doc(r.id));
   batch.delete(db.collection("reuniones").doc(r.id));
   await batch.commit();
   cerrarSheet(); toast("Reunión eliminada");
@@ -912,6 +1041,22 @@ $("btnWsp").onclick = ()=>{
   const slots=state.asignaciones[r.id]?.slots||{};
   const d=fechaLocal(r.fecha);
   let txt="*"+r.titulo+"* — "+DIAS[d.getDay()]+" "+d.getDate()+"/"+String(d.getMonth()+1).padStart(2,"0")+" · "+r.hora+" hs\n";
+  const adoW=state.adoracion[r.id]||{};
+  const bandaW=adoW.bandaId?state.bandas.find(b=>b.id===adoW.bandaId):null;
+  if(bandaW){
+    txt+="\n*BANDA: "+bandaW.nombre.toUpperCase()+"*\n";
+    (bandaW.miembros||[]).forEach(m=>{
+      const s=servidor(m.servidorId);
+      txt+="• "+(m.rol?m.rol+": ":"")+(s?s.nombre:"?")+"\n";
+    });
+  }
+  if((adoW.setlist||[]).length){
+    txt+="\n*SETLIST*\n";
+    adoW.setlist.forEach((it,i)=>{
+      const c=state.canciones.find(x=>x.id===it.cancionId);
+      txt+=(i+1)+". "+(c?c.nombre:"?")+(it.tono?" ("+it.tono+")":"")+(it.cantante?" — "+it.cantante:"")+"\n";
+    });
+  }
   let faltan=0;
   state.areas.forEach(a=>{
     let bloque="";
@@ -1420,10 +1565,12 @@ function renderInicio(){
       const falta=ac.cupo-((slots[slotKey(a.id,ac.id)]||[]).length);
       if(falta>0) faltantes.push(ac.nombre+(falta>1?" ×"+falta:""));
     }));
+    const adoI=state.adoracion[r.id];
+    const bandaI = adoI&&adoI.bandaId ? state.bandas.find(b=>b.id===adoI.bandaId) : null;
     return `<div class="row-item" style="cursor:pointer" onclick="abrirReunion('${r.id}')">
       <div class="row-main">
         <div class="row-title">${escapeHtml(r.titulo)} · <span class="mono" style="font-weight:500;font-size:13px">${fmtFecha(r.fecha)} ${r.hora}</span></div>
-        <div class="row-sub">${faltantes.length?`<span class="falta">Faltan: ${escapeHtml(faltantes.join(", "))}</span>`:"Equipo completo ✓"}</div>
+        <div class="row-sub">${faltantes.length?`<span class="falta">Faltan: ${escapeHtml(faltantes.join(", "))}</span>`:"Equipo completo ✓"} · ♪ ${bandaI?escapeHtml(bandaI.nombre):'<span class="falta">sin banda</span>'}</div>
       </div>
       <span class="mono" style="font-size:12px;color:var(--ink-soft);flex-shrink:0">${n}/${total}</span>
     </div>`;
@@ -1524,6 +1671,280 @@ window.delNota=async id=>{
   if(!confirm("¿Eliminar esta nota y sus respuestas?")) return;
   await db.collection("notas").doc(id).delete();
   toast("Nota eliminada");
+};
+
+/* ---------- Adoración: banda y setlist en la reunión ---------- */
+function renderSheetAdo(r){
+  const doc = state.adoracion[r.id]||{};
+  const editable = puedeEditarArea("adoracion");
+  const banda = doc.bandaId ? state.bandas.find(b=>b.id===doc.bandaId) : null;
+  let html = `<div class="area-block"><div class="area-head"><span class="area-name">Banda y setlist</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+  html += `<div class="act-row"><div class="act-name"><span>Banda asignada</span></div>`;
+  if(editable){
+    html += `<select onchange="setBandaReunion(this.value)" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper);color:var(--ink);width:100%">
+      <option value="">— Sin banda —</option>`+
+      state.bandas.map(b=>`<option value="${b.id}" ${doc.bandaId===b.id?"selected":""}>${escapeHtml(b.nombre)}</option>`).join("")+`</select>`;
+  }else{
+    html += `<div class="chips"><span class="chip">${banda?escapeHtml(banda.nombre):"Sin banda"}</span></div>`;
+  }
+  if(banda){
+    html += `<div class="chips" style="margin-top:8px">`+(banda.miembros||[]).map(m=>{
+      const s = servidor(m.servidorId);
+      const nombre = s ? s.nombre : "(eliminado)";
+      const conf = s ? conflictoDe(s.id, r.id) : null;
+      const nd = s && (s.noDisponible||[]).includes(r.fecha);
+      const warn = nd ? "no disponible ese día" : (conf ? "también en "+nombreActividad(conf) : null);
+      return warn
+        ? `<span class="warn-chip">⚠ ${escapeHtml(nombre)} · ${escapeHtml(warn)}</span>`
+        : `<span class="chip">${escapeHtml(nombre)}${m.rol?`&nbsp;<span style="color:var(--ink-faint);font-weight:400;font-size:11px">${escapeHtml(m.rol)}</span>`:""}</span>`;
+    }).join("")+`</div>`;
+  }
+  html += `</div>`;
+  const setlist = doc.setlist||[];
+  html += `<div class="act-row"><div class="act-name"><span>Setlist</span><span class="act-count">${setlist.length} canciones</span></div>`;
+  setlist.forEach((it,i)=>{
+    const c = state.canciones.find(x=>x.id===it.cancionId);
+    html += `<div class="set-row">
+      <span class="set-num">${i+1}</span>
+      <span class="set-tit">${escapeHtml(c?c.nombre:"(eliminada)")} <span class="set-art">${escapeHtml(c?.artista||"")}</span></span>
+      ${c?.link?`<a class="mini" href="${escapeHtml(c.link)}" target="_blank" title="Referencia">▶</a>`:""}
+      ${editable?`
+      <input class="set-in" value="${escapeHtml(it.tono||"")}" placeholder="Tono" title="Tono" onchange="setlistCampo(${i},'tono',this.value)">
+      <input class="set-in" value="${escapeHtml(it.bpm||"")}" placeholder="BPM" title="BPM" onchange="setlistCampo(${i},'bpm',this.value)">
+      <input class="set-in canta" value="${escapeHtml(it.cantante||"")}" placeholder="¿Quién canta?" title="Quién la canta" onchange="setlistCampo(${i},'cantante',this.value)">
+      <button class="mini" title="Subir" onclick="setlistMover(${i},-1)">↑</button>
+      <button class="mini" title="Bajar" onclick="setlistMover(${i},1)">↓</button>
+      <button class="mini" title="Quitar" onclick="setlistQuitar(${i})">✕</button>`
+      :`<span class="mono" style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.tono||"")}${it.bpm?" · "+escapeHtml(it.bpm):""}${it.cantante?" · canta "+escapeHtml(it.cantante):""}</span>`}
+    </div>`;
+  });
+  if(editable) html += `<div class="chips" style="margin-top:8px"><button class="chip-add" onclick="abrirCancPicker()">+ Agregar canción</button></div>`;
+  html += `</div></div>`;
+  return html;
+}
+
+async function guardarAdo(reunionId, cambios){
+  const r = state.reuniones.find(x=>x.id===reunionId);
+  const doc = {...(state.adoracion[reunionId]||{}), ...cambios, mes: r?r.mes:state.mes, reunionId};
+  state.adoracion[reunionId]=doc;
+  renderPlan(); if(state.sheetReunionId) renderSheet();
+  try{ await db.collection("adoracion").doc(reunionId).set(doc, {merge:true}); }
+  catch(e){ toast("No se pudo guardar: "+e.message, true); }
+}
+window.setBandaReunion = v => guardarAdo(state.sheetReunionId, {bandaId: v||null});
+window.setlistCampo = (i,campo,v)=>{
+  const doc=state.adoracion[state.sheetReunionId]||{};
+  const sl=(doc.setlist||[]).slice(); if(!sl[i]) return;
+  sl[i]={...sl[i], [campo]:v};
+  guardarAdo(state.sheetReunionId, {setlist:sl});
+};
+window.setlistMover = (i,d)=>{
+  const doc=state.adoracion[state.sheetReunionId]||{};
+  const sl=(doc.setlist||[]).slice(); const j=i+d;
+  if(j<0||j>=sl.length) return;
+  [sl[i],sl[j]]=[sl[j],sl[i]];
+  guardarAdo(state.sheetReunionId, {setlist:sl});
+};
+window.setlistQuitar = i=>{
+  const doc=state.adoracion[state.sheetReunionId]||{};
+  const sl=(doc.setlist||[]).slice(); sl.splice(i,1);
+  guardarAdo(state.sheetReunionId, {setlist:sl});
+};
+window.abrirCancPicker = ()=>{ $("cancPickerSearch").value=""; renderCancPicker(); $("cancPickerOverlay").classList.add("open"); };
+$("cancPickerSearch").oninput = ()=>renderCancPicker();
+function renderCancPicker(){
+  const q=$("cancPickerSearch").value.toLowerCase();
+  const lista=state.canciones.filter(c=>!q || c.nombre.toLowerCase().includes(q) || (c.artista||"").toLowerCase().includes(q)).slice(0,40);
+  $("cancPickerList").innerHTML = lista.length ? lista.map(c=>`<button class="picker-row" onclick="setlistAgregar('${c.id}')">
+      <span class="pname">${escapeHtml(c.nombre)} <span class="set-art">${escapeHtml(c.artista||"")}</span></span>
+      <span class="pstate">${escapeHtml(c.tono||"")}${c.bpm?" · "+escapeHtml(String(c.bpm)):""}</span></button>`).join("")
+    : `<div class="empty-state"><strong>No hay canciones con esa búsqueda</strong>Cargalas en la pestaña Adoración → Canciones.</div>`;
+}
+window.setlistAgregar = id=>{
+  const c=state.canciones.find(x=>x.id===id); if(!c) return;
+  const doc=state.adoracion[state.sheetReunionId]||{};
+  const sl=(doc.setlist||[]).slice();
+  sl.push({cancionId:id, tono:c.tpm||c.tono||"", bpm:c.bpm||"", cantante:""});
+  guardarAdo(state.sheetReunionId, {setlist:sl});
+  $("cancPickerOverlay").classList.remove("open");
+};
+
+/* ---------- Adoración: vista de bandas y canciones ---------- */
+let adoTab="bandas";
+window.setAdoTab = t=>{
+  adoTab=t;
+  $("segBandas").classList.toggle("on", t==="bandas");
+  $("segCanc").classList.toggle("on", t==="canciones");
+  $("adoBtnB").style.display = t==="bandas" ? "" : "none";
+  $("adoBtnC").style.display = t==="canciones" ? "" : "none";
+  renderAdo();
+};
+function renderAdo(){
+  const cont=$("adoBody"); if(!cont) return;
+  const editable = puedeEditarArea("adoracion");
+  if(adoTab==="bandas"){
+    $("btnNuevaBanda").style.display = editable ? "" : "none";
+    cont.innerHTML = state.bandas.length ? `<div class="list-card">`+state.bandas.map(b=>`
+      <div class="row-item">
+        <div class="row-main">
+          <div class="row-title">${escapeHtml(b.nombre)}</div>
+          <div class="row-sub">${(b.miembros||[]).map(m=>{const s=servidor(m.servidorId); return `<span class="tag">${escapeHtml(s?s.nombre:"?")}${m.rol?" · "+escapeHtml(m.rol):""}</span>`;}).join("")||"Sin integrantes"}</div>
+        </div>
+        ${editable?`<div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarBanda('${b.id}')">Editar</button></div>`:""}
+      </div>`).join("")+`</div>`
+    : `<div class="empty-state"><strong>Todavía no hay bandas</strong>${editable?'Crealas con "+ Banda": nombre e integrantes con su rol. Los integrantes tienen que estar cargados como servidores.':'Un líder de Adoración todavía no cargó las bandas.'}</div>`;
+  }else{
+    ["btnNuevaCanc","btnImportCanc","btnPlantillaCanc"].forEach(id=>$(id).style.display = editable ? "" : "none");
+    const q=(state.cancQ||"").toLowerCase();
+    const lista=state.canciones.filter(c=>!q || c.nombre.toLowerCase().includes(q) || (c.artista||"").toLowerCase().includes(q) || (c.tipo||"").toLowerCase().includes(q));
+    cont.innerHTML = `<input class="search-box" id="cancQ" type="text" placeholder="Buscar entre ${state.canciones.length} canciones…" value="${escapeHtml(state.cancQ||"")}">`
+    + (lista.length ? `<div class="list-card">`+lista.slice(0,80).map(c=>`
+      <div class="row-item">
+        <div class="row-main">
+          <div class="row-title">${escapeHtml(c.nombre)} <span class="set-art">${escapeHtml(c.artista||"")}</span></div>
+          <div class="row-sub">${[c.tipo, c.tono?"Tono "+c.tono:null, c.bpm?"♩ "+c.bpm:null, c.tpm?"TP-M "+c.tpm:null, c.tph?"TP-H "+c.tph:null, c.pista?"Con pista":null].filter(Boolean).map(x=>escapeHtml(String(x))).join(" · ")||"Sin datos musicales"}</div>
+        </div>
+        <div class="row-actions">
+          ${c.link?`<a class="btn btn-ghost btn-sm" style="text-decoration:none" target="_blank" href="${escapeHtml(c.link)}" title="Referencia">▶</a>`:""}
+          ${editable?`<button class="btn btn-ghost btn-sm" onclick="editarCanc('${c.id}')">Editar</button>`:""}
+        </div>
+      </div>`).join("")+(lista.length>80?`<div class="row-item"><div class="row-main"><div class="row-sub">Mostrando 80 de ${lista.length} — afiná la búsqueda para ver el resto.</div></div></div>`:"")+`</div>`
+    : `<div class="empty-state"><strong>No hay canciones${q?" con esa búsqueda":""}</strong>${editable?'Importá el CSV de tu planilla o cargalas con "+ Canción".':''}</div>`);
+    const inp=$("cancQ");
+    inp.oninput=()=>{ state.cancQ=inp.value; const pos=inp.selectionStart; renderAdo(); const n=$("cancQ"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } };
+  }
+}
+
+/* ---------- Bandas: CRUD ---------- */
+function filaMiembro(m){
+  const opts='<option value="">— Elegir servidor —</option>'+state.servidores.map(s=>`<option value="${s.id}" ${m&&m.servidorId===s.id?"selected":""}>${escapeHtml(s.nombre)}</option>`).join("");
+  return `<div class="b-miembro" style="display:flex;gap:6px;margin-bottom:6px">
+    <select style="flex:1.2;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--paper);color:var(--ink)">${opts}</select>
+    <input type="text" placeholder="Rol (Líder vocal, Batería…)" value="${escapeHtml(m?.rol||"")}" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper);color:var(--ink)">
+    <button class="btn btn-ghost btn-sm" type="button" onclick="this.parentElement.remove()">✕</button></div>`;
+}
+$("btnNuevaBanda").onclick=()=>{
+  state.editBandaId=null;
+  $("bandaModalTitle").textContent="Nueva banda";
+  $("bNombre").value="";
+  $("bMiembros").innerHTML=filaMiembro(null)+filaMiembro(null);
+  $("btnDelBanda").style.display="none";
+  $("bandaOverlay").classList.add("open");
+};
+window.editarBanda=id=>{
+  const b=state.bandas.find(x=>x.id===id); if(!b) return;
+  state.editBandaId=id;
+  $("bandaModalTitle").textContent="Editar: "+b.nombre;
+  $("bNombre").value=b.nombre;
+  $("bMiembros").innerHTML=(b.miembros||[]).map(filaMiembro).join("")||filaMiembro(null);
+  $("btnDelBanda").style.display="";
+  $("bandaOverlay").classList.add("open");
+};
+$("btnAddMiembro").onclick=()=>$("bMiembros").insertAdjacentHTML("beforeend", filaMiembro(null));
+$("btnSaveBanda").onclick=async ()=>{
+  const nombre=$("bNombre").value.trim();
+  if(!nombre){ toast("Poné un nombre a la banda", true); return; }
+  const miembros=[...$("bMiembros").querySelectorAll(".b-miembro")].map(el=>{
+    const sel=el.querySelector("select"), inp=el.querySelector("input");
+    if(!sel.value) return null;
+    return {servidorId:sel.value, rol:inp.value.trim()};
+  }).filter(Boolean);
+  if(state.editBandaId) await db.collection("bandas").doc(state.editBandaId).set({nombre, miembros},{merge:true});
+  else await db.collection("bandas").add({nombre, miembros});
+  $("bandaOverlay").classList.remove("open");
+  toast("Banda guardada: "+nombre);
+};
+$("btnDelBanda").onclick=async ()=>{
+  if(!confirm("¿Eliminar esta banda? Las reuniones que la tenían asignada quedan sin banda.")) return;
+  await db.collection("bandas").doc(state.editBandaId).delete();
+  $("bandaOverlay").classList.remove("open");
+  toast("Banda eliminada");
+};
+
+/* ---------- Canciones: CRUD e import/export ---------- */
+const CANC_CAMPOS=[["cNombre","nombre"],["cArtista","artista"],["cTipo","tipo"],["cBpm","bpm"],["cTono","tono"],["cTpm","tpm"],["cTsm","tsm"],["cTph","tph"],["cTsh","tsh"],["cLink","link"]];
+$("btnNuevaCanc").onclick=()=>{
+  state.editCancId=null;
+  $("cancModalTitle").textContent="Nueva canción";
+  CANC_CAMPOS.forEach(([el])=>$(el).value="");
+  $("cRec").value=""; $("cPista").checked=false;
+  $("btnDelCanc").style.display="none";
+  $("cancOverlay").classList.add("open");
+};
+window.editarCanc=id=>{
+  const c=state.canciones.find(x=>x.id===id); if(!c) return;
+  state.editCancId=id;
+  $("cancModalTitle").textContent="Editar canción";
+  CANC_CAMPOS.forEach(([el,campo])=>$(el).value=c[campo]||"");
+  $("cRec").value=c.recurrencia||""; $("cPista").checked=!!c.pista;
+  $("btnDelCanc").style.display="";
+  $("cancOverlay").classList.add("open");
+};
+$("btnSaveCanc").onclick=async ()=>{
+  const data={};
+  CANC_CAMPOS.forEach(([el,campo])=>data[campo]=$(el).value.trim());
+  if(!data.nombre){ toast("El nombre es obligatorio", true); return; }
+  data.recurrencia=$("cRec").value; data.pista=$("cPista").checked;
+  if(state.editCancId) await db.collection("canciones").doc(state.editCancId).set(data,{merge:true});
+  else await db.collection("canciones").add(data);
+  $("cancOverlay").classList.remove("open");
+  toast("Guardada: "+data.nombre);
+};
+$("btnDelCanc").onclick=async ()=>{
+  if(!confirm("¿Eliminar esta canción de la biblioteca? En los setlists donde estaba va a figurar como (eliminada).")) return;
+  await db.collection("canciones").doc(state.editCancId).delete();
+  $("cancOverlay").classList.remove("open");
+  toast("Canción eliminada");
+};
+$("btnPlantillaCanc").onclick=()=>{
+  descargarCSV("plantilla-canciones.csv",[
+    ["Cancion","Artista","Tipo","Recurrencia","Pista","Bpm","Tono","TP-M","TS-M","TP-H","TS-H","Link"],
+    ["Como En El Cielo","Miel San Marcos","Celebración","Alta","Si","135 (4/4)","C","E (+4)","F (+5)","C","B (-1)","https://youtu.be/..."]
+  ]);
+};
+$("btnExportCanc").onclick=()=>{
+  descargarCSV("canciones.csv",[["Cancion","Artista","Tipo","Recurrencia","Pista","Bpm","Tono","TP-M","TS-M","TP-H","TS-H","Link"],
+    ...state.canciones.map(c=>[c.nombre,c.artista||"",c.tipo||"",c.recurrencia||"",c.pista?"Si":"No",c.bpm||"",c.tono||"",c.tpm||"",c.tsm||"",c.tph||"",c.tsh||"",c.link||""])]);
+};
+$("btnImportCanc").onclick=()=>{ $("impCancFile").value=""; $("impCancPreview").innerHTML=""; $("btnImpCancConfirm").disabled=true; state.importCanc=null; $("impCancOverlay").classList.add("open"); };
+$("impCancFile").onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const filas=parseCSV(await file.text());
+  if(filas.length<2){ $("impCancPreview").innerHTML='<p class="section-note">El archivo no tiene datos debajo del encabezado.</p>'; return; }
+  const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  const head=filas[0].map(norm);
+  const col=n=>head.findIndex(h=>h.startsWith(n));
+  const iN=col("cancion"), iA=col("artista"), iT=col("tipo"), iR=col("recurrencia"), iP=col("pista"),
+        iB=col("bpm"), iTo=col("tono"), iTpm=col("tp-m"), iTsm=col("ts-m"), iTph=col("tp-h"), iTsh=col("ts-h"), iL=col("link");
+  if(iN<0){ $("impCancPreview").innerHTML='<p class="section-note" style="color:var(--danger)">Falta la columna "Cancion". Descargá la plantilla para ver el formato.</p>'; return; }
+  const v=(f,i)=>i>=0?(f[i]||"").trim():"";
+  const rows=[];
+  filas.slice(1).forEach(f=>{
+    const nombre=v(f,iN); if(!nombre) return;
+    rows.push({nombre, artista:v(f,iA), tipo:v(f,iT), recurrencia:v(f,iR), pista:/^s/i.test(v(f,iP)),
+      bpm:v(f,iB), tono:v(f,iTo), tpm:v(f,iTpm), tsm:v(f,iTsm), tph:v(f,iTph), tsh:v(f,iTsh), link:v(f,iL)});
+  });
+  state.importCanc=rows;
+  $("impCancPreview").innerHTML=`<p class="section-note"><strong>${rows.length}</strong> canciones listas para importar.</p>`;
+  $("btnImpCancConfirm").disabled=!rows.length;
+};
+$("btnImpCancConfirm").onclick=async ()=>{
+  const rows=state.importCanc||[];
+  $("btnImpCancConfirm").disabled=true;
+  $("btnImpCancConfirm").innerHTML='<span class="spinner"></span>';
+  const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  const porClave={}; state.canciones.forEach(c=>porClave[norm(c.nombre)+"|"+norm(c.artista)]=c.id);
+  let nuevas=0, actualizadas=0;
+  const batch=db.batch();
+  rows.forEach(r=>{
+    const id=porClave[norm(r.nombre)+"|"+norm(r.artista)];
+    if(id){ batch.set(db.collection("canciones").doc(id), r, {merge:true}); actualizadas++; }
+    else{ batch.set(db.collection("canciones").doc(), r); nuevas++; }
+  });
+  await batch.commit();
+  $("impCancOverlay").classList.remove("open");
+  $("btnImpCancConfirm").innerHTML="Importar";
+  toast(nuevas+" nuevas, "+actualizadas+" actualizadas");
 };
 
 /* ---------- Cierre de modales genérico ---------- */
