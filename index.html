@@ -334,6 +334,10 @@ table.stats tr:last-child td{border-bottom:none}
       <button class="close-x" id="sheetClose" aria-label="Cerrar">✕</button>
     </div>
   </div>
+  <div style="padding:10px 22px;border-bottom:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-ghost btn-sm" id="btnCopiar">⧉ Copiar equipo de…</button>
+    <button class="btn btn-amber btn-sm" id="btnWsp">Compartir por WhatsApp</button>
+  </div>
   <div class="sheet-body" id="sheetBody"></div>
 </aside>
 
@@ -428,6 +432,17 @@ table.stats tr:last-child td{border-bottom:none}
     <div class="modal-foot">
       <button class="btn btn-ghost" data-close="impOverlay">Cancelar</button>
       <button class="btn btn-primary" id="btnImpConfirm" disabled>Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: copiar equipo ===== -->
+<div class="modal-overlay" id="copiarOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Copiar equipo de otra reunión</h3><button class="close-x" data-close="copiarOverlay">✕</button></div>
+    <div class="modal-body">
+      <p class="section-note">Elegí la reunión de origen. Se copian las asignaciones a esta reunión respetando cupos y conflictos: si alguien ya está ocupado acá, se lo saltea. Los líderes solo copian dentro de sus áreas.</p>
+      <div class="picker-list" id="copiarList"></div>
     </div>
   </div>
 </div>
@@ -747,6 +762,90 @@ $("btnDelReunion").onclick = async ()=>{
   batch.delete(db.collection("reuniones").doc(r.id));
   await batch.commit();
   cerrarSheet(); toast("Reunión eliminada");
+};
+
+/* ---------- Copiar equipo de otra reunión ---------- */
+let copiarCandidatas=[];
+$("btnCopiar").onclick = async ()=>{
+  const r=state.reuniones.find(x=>x.id===state.sheetReunionId); if(!r) return;
+  const [y,m]=state.mes.split("-").map(Number);
+  const prev=new Date(y, m-2, 1);
+  const prevMes=prev.getFullYear()+"-"+String(prev.getMonth()+1).padStart(2,"0");
+  $("copiarList").innerHTML='<div class="empty-state">Buscando reuniones…</div>';
+  $("copiarOverlay").classList.add("open");
+  const snap=await db.collection("reuniones").where("mes","in",[state.mes, prevMes]).get();
+  copiarCandidatas=snap.docs.map(d=>({id:d.id, ...d.data()}))
+    .filter(x=>x.id!==r.id)
+    .sort((a,b)=>(b.fecha+b.hora).localeCompare(a.fecha+a.hora));
+  if(!copiarCandidatas.length){
+    $("copiarList").innerHTML='<div class="empty-state"><strong>No hay otras reuniones</strong>Solo se buscan reuniones de este mes y del anterior.</div>';
+    return;
+  }
+  $("copiarList").innerHTML=copiarCandidatas.map(c=>{
+    const misma = c.titulo===r.titulo && c.hora===r.hora;
+    return `<button class="picker-row" onclick="copiarDesde('${c.id}')">
+      <span class="pname">${escapeHtml(c.titulo)}${misma?' <span class="tag">misma reunión</span>':""}</span>
+      <span class="pstate mono">${fmtFecha(c.fecha)} ${c.fecha.slice(5,7)!==state.mes.slice(5,7)?"("+MESES[fechaLocal(c.fecha).getMonth()].slice(0,3)+")":""} · ${c.hora}</span></button>`;
+  }).join("");
+};
+
+window.copiarDesde = async function(srcId){
+  $("copiarOverlay").classList.remove("open");
+  const destinoId=state.sheetReunionId;
+  const src=await db.collection("asignaciones").where("reunionId","==",srcId).get();
+  const origen={};
+  src.docs.forEach(d=>{ const x=d.data(); origen[x.areaId]=x.slots||{}; });
+  const refs=state.areas.map(a=>db.collection("asignaciones").doc(destinoId+"__"+a.id));
+  let agregados=0, omitidos=0;
+  try{
+    await db.runTransaction(async tx=>{
+      agregados=0; omitidos=0;
+      const snaps=await Promise.all(refs.map(rf=>tx.get(rf)));
+      const ocupados=new Set();
+      const actuales=state.areas.map((a,i)=>{
+        const sl=snaps[i].exists?(snaps[i].data().slots||{}):{};
+        for(const k in sl)(sl[k]||[]).forEach(id=>ocupados.add(id));
+        return sl;
+      });
+      state.areas.forEach((a,i)=>{
+        if(!puedeEditarArea(a.id) || !origen[a.id]) return;
+        const sl={...actuales[i]};
+        let cambio=false;
+        a.actividades.forEach(ac=>{
+          const dest=(sl[ac.id]||[]).slice();
+          (origen[a.id][ac.id]||[]).forEach(sid=>{
+            if(!servidor(sid) || ocupados.has(sid) || dest.length>=ac.cupo){ omitidos++; return; }
+            dest.push(sid); ocupados.add(sid); agregados++; cambio=true;
+          });
+          sl[ac.id]=dest;
+        });
+        if(cambio) tx.set(refs[i], {mes:state.mes, reunionId:destinoId, areaId:a.id, slots:sl}, {merge:true});
+      });
+    });
+    toast(agregados
+      ? agregados+" asignados"+(omitidos?" · "+omitidos+" omitidos (ya ocupados, sin cupo o eliminados)":"")
+      : "No había nada para copiar"+(omitidos?" ("+omitidos+" omitidos)":""));
+  }catch(e){ toast("No se pudo copiar: "+e.message, true); }
+};
+
+/* ---------- Compartir por WhatsApp ---------- */
+$("btnWsp").onclick = ()=>{
+  const r=state.reuniones.find(x=>x.id===state.sheetReunionId); if(!r) return;
+  const slots=state.asignaciones[r.id]?.slots||{};
+  const d=fechaLocal(r.fecha);
+  let txt="*"+r.titulo+"* — "+DIAS[d.getDay()]+" "+d.getDate()+"/"+String(d.getMonth()+1).padStart(2,"0")+" · "+r.hora+" hs\n";
+  let faltan=0;
+  state.areas.forEach(a=>{
+    let bloque="";
+    a.actividades.forEach(ac=>{
+      const ids=slots[slotKey(a.id,ac.id)]||[];
+      ids.forEach(sid=>{ bloque+="• "+ac.nombre+": "+(servidor(sid)?.nombre||"?")+"\n"; });
+      for(let i=ids.length;i<ac.cupo;i++){ bloque+="• "+ac.nombre+": _falta cubrir_\n"; faltan++; }
+    });
+    if(bloque) txt+="\n*"+a.nombre.toUpperCase()+"*\n"+bloque;
+  });
+  if(faltan) txt+="\n⚠️ Faltan cubrir "+faltan+" puestos";
+  window.open("https://wa.me/?text="+encodeURIComponent(txt), "_blank");
 };
 
 /* ---------- Asignar / quitar (con detección de conflictos) ---------- */
