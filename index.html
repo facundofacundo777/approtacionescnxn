@@ -899,12 +899,12 @@ function renderPlan(){
   let html="", semanaActual=null;
   state.reuniones.forEach(r=>{
     const d=fechaLocal(r.fecha);
-    const lunes=new Date(d); lunes.setDate(d.getDate()-((d.getDay()+6)%7));
-    const wk = lunes.toISOString().slice(0,10);
+    const inicioSem=new Date(d); inicioSem.setDate(d.getDate()-d.getDay());
+    const wk = inicioSem.toISOString().slice(0,10);
     if(wk!==semanaActual){
       if(semanaActual!==null) html+="</div>";
       semanaActual=wk;
-      html += `<div class="week-label">Semana del ${lunes.getDate()} de ${MESES[lunes.getMonth()]}</div><div class="meet-grid">`;
+      html += `<div class="week-label">Semana del ${inicioSem.getDate()} de ${MESES[inicioSem.getMonth()]}</div><div class="meet-grid">`;
     }
     const n=cubiertos(r.id);
     const pct = total? n/total : 0;
