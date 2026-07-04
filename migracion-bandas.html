@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migración de bandas · Servidores</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#F4F5F7;color:#17233B;margin:0;padding:24px;display:flex;justify-content:center}
+.card{background:#fff;border:1px solid #E3E6EC;border-radius:16px;padding:28px;max-width:640px;width:100%}
+h1{font-size:20px;margin:0 0 6px}
+p{color:#5A6478;font-size:14px;line-height:1.5}
+.btn{border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-primary{background:#17233B;color:#fff}
+.btn-amber{background:#F2A61D;color:#17233B}
+label{display:flex;gap:8px;align-items:center;font-size:14px;margin:10px 0}
+input[type=month]{border:1px solid #E3E6EC;border-radius:8px;padding:8px 10px;font-size:14px}
+#log{background:#17233B;color:#C9F0D9;font-family:monospace;font-size:12px;border-radius:10px;padding:14px;margin-top:16px;max-height:340px;overflow-y:auto;white-space:pre-wrap;display:none}
+.err{color:#FFB3AD}
+hr{border:none;border-top:1px solid #E3E6EC;margin:18px 0}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Migración de bandas de Adoración</h1>
+  <p>Esta herramienta se usa una vez (o cuando cambien las bandas). Carga en la app: las personas que falten como servidores, las 16 bandas (banda × rotación de voces) y, si querés, asigna las bandas a las reuniones de un mes según el patrón de rotación.</p>
+  <p><strong>Requisito:</strong> entrá con tu cuenta de administrador (o líder de Adoración).</p>
+  <div id="paso1"><button class="btn btn-primary" id="btnLogin">Ingresar con Google</button></div>
+  <div id="paso2" style="display:none">
+    <hr>
+    <label><input type="checkbox" id="chkServ" checked> Crear servidores que falten (por nombre)</label>
+    <label><input type="checkbox" id="chkBandas" checked> Crear / actualizar las 16 bandas</label>
+    <label><input type="checkbox" id="chkAsignar" checked> Asignar bandas a las reuniones del mes:
+      <input type="month" id="mesAsignar"></label>
+    <label style="margin-left:26px"><input type="checkbox" id="chkInvertido"> Mes invertido (B#2 a la mañana en semanas impares)</label>
+    <label style="margin-left:26px"><input type="checkbox" id="chkPisar" checked> Sobrescribir bandas ya asignadas ese mes</label>
+    <hr>
+    <button class="btn btn-amber" id="btnRun">Ejecutar migración</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCHz0RMxK8YZFWnJNlpEXC06Kvgc2Prrik",
+  authDomain: "approtacionescnxn.firebaseapp.com",
+  projectId: "approtacionescnxn",
+  storageBucket: "approtacionescnxn.firebasestorage.app",
+  messagingSenderId: "203742729240",
+  appId: "1:203742729240:web:5f258ddc0529ee9a78df6d"
+};
+
+/* ====== DATOS: bandas de CNXN (dashboard junio-diciembre 2026) ====== */
+// Cada nombre "A / B" son dos personas que alternan: se cargan las dos con el mismo rol.
+const FIJOS = {
+  b1: {titulo:"B#1", dia:"Domingos", lideres:[["Agustín Da Costa Santos","Líder musical"],["Evel Arraga","Líder de voces"]],
+    musicos:[["Agustín Da Costa Santos","Batería"],["Nahuel Riquelme","Bajo"],["Walter Álvarez","Teclado"],
+      ["Pablo Aveldaño","Guitarra eléctrica 1"],["Kevin Aranda","Guitarra eléctrica 2"],["Héctor Coronel","Guitarra acústica"],["Marshall Cámara","Vientos"]]},
+  b2: {titulo:"B#2", dia:"Domingos", lideres:[["Elian Britos","Líder musical"],["Cynthia Parodi","Líder de voces"]],
+    musicos:[["Elías Hatum","Batería"],["Elian Britos","Bajo"],["David Marani","Teclado"],
+      ["Lucas Maldonado","Guitarra eléctrica 1"],["Maximiliano Martínez","Guitarra eléctrica 2"],["Lucas Torres","Guitarra acústica"],["Silvio Ledesma","Vientos"]]},
+  b3: {titulo:"B#3", dia:"Jueves", lideres:[["Lucas Maldonado","Líder musical"],["Dylan Ferrari","Líder de voces"]],
+    musicos:[["Jeric Ochoa / Evelyn Rosales","Batería"],["Hebe Marcia Ávila","Bajo"],["Walter Álvarez","Teclado"],
+      ["Lucas Maldonado","Guitarra eléctrica 1"],["Leonel Paz / Joel Lino Sánchez","Guitarra eléctrica 2"],
+      ["Héctor Coronel","Guitarra acústica"],["César Rosales","Saxo"],["Leonardo Arce","Percusión"]]},
+  b4: {titulo:"B#4", dia:"Miércoles", lideres:[["Elías Hatum","Líder musical"],["Lorena Redes","Líder de voces"]],
+    musicos:[["Elías Hatum / Evelyn Rosales","Batería"],["Fernando Anile / Hebe Marcia Ávila","Bajo"],
+      ["Leonardo Acuña","Teclado"],["Leo Borges","Guitarra eléctrica 1"],["Bruno Cacciabue","Guitarra acústica"]]},
+  b5: {titulo:"B#5", dia:"ADN", lideres:[],
+    musicos:[["Agustín Da Costa Santos","Batería"],["Elian Britos","Bajo"],["Luka Marioni","Teclado"],
+      ["Kevin Aranda","Guitarra eléctrica 1"],["Leo Borges","Guitarra eléctrica 2"]]}
+};
+// Rotaciones de voces: [Dir A, Dir 1, Dir 2, Dir 3, Dir 4, Dir B] — "" = vacante
+const VOCES = {
+  b1: [
+    ["Victoria Sotelo","Evel Arraga","Mayra Cabrera","Paulo Santonocito","Dalma Del Manzo",""],
+    ["Elizabeth López","Evel Arraga","Mayra Cabrera","Arnaldo Arce","Silvana Corregidor",""],
+    ["Débora Vallejos","Evel Arraga","Mayra Cabrera","Dalma Del Manzo","Dylan Ferrari",""],
+    ["Ariadna Zárate","Evel Arraga","Mayra Cabrera","Camila Galeota","Milagros Olivera",""]
+  ],
+  b2: [
+    ["Daniela Oliver","Cynthia Parodi","Enzo Aguirre","Lorena Mora","Pablo González",""],
+    ["Evelyn Mina","Cynthia Parodi","Enzo Aguirre","Lorena Redes","Rocío Bordón",""],
+    ["Carlos Husak","Cynthia Parodi","Enzo Aguirre","Lorena Mora","Daniela Oliver",""],
+    ["Beatriz Parra V.","Cynthia Parodi","Enzo Aguirre","Ruth Granata","Paulo Santonocito",""]
+  ],
+  b3: [
+    ["Victoria Sotelo","Pablo González","Elian Britos","Dylan Ferrari","Mayra Cabrera",""],
+    ["Ludmila Prado","Dariel Gómez","Dylan Ferrari","Rocío Bordón","Valentina Deluchi",""],
+    ["Beatriz Parra V.","Pablo González","Camila Galeota","Dylan Ferrari","Mayra Cabrera",""],
+    ["Luis Villegas","Flavia Vázquez","Dylan Ferrari","Elian Britos","Cynthia Parodi",""]
+  ],
+  b4: [
+    ["Valentina Deluchi","Natalia Casella","Silvana Corregidor","Dariel Gómez","Lorena Redes",""],
+    ["Carina Chiachiarella","Patricia Chiachiarella","Silvana Corregidor","Dariel Gómez","Lorena Redes",""]
+  ],
+  b5: [
+    ["Elena Pereyra","Ludmila Prado","Milagros Olivera","Daniela Oliver","Ruth Granata",""],
+    ["Camila Galeota","Evelyn Mina","Dariel Gómez","Rocío Bordón","Victoria Sotelo","Leyla Britos"]
+  ]
+};
+const ROLES_VOCES=["Voz — Dir A","Voz — Dir 1","Voz — Dir 2","Voz — Dir 3","Voz — Dir 4","Voz — Dir B"];
+
+/* ====== Lógica ====== */
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(), db=firebase.firestore();
+const $=id=>document.getElementById(id);
+const norm=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
+function log(msg,err){ const l=$("log"); l.style.display="block"; const d=document.createElement("div"); if(err)d.className="err"; d.textContent=msg; l.appendChild(d); l.scrollTop=l.scrollHeight; }
+
+$("btnLogin").onclick=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>log("Error de login: "+e.message,true));
+auth.onAuthStateChanged(u=>{
+  if(!u) return;
+  $("paso1").style.display="none";
+  $("paso2").style.display="block";
+  const hoy=new Date();
+  const mes=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0");
+  $("mesAsignar").value=mes;
+  $("chkInvertido").checked=(hoy.getMonth()+1)%2===1; // jul, sep, nov 2026 = invertido
+  $("mesAsignar").onchange=()=>{ $("chkInvertido").checked=(+$("mesAsignar").value.split("-")[1])%2===1; };
+  log("Sesión: "+(u.displayName||u.email));
+});
+
+function nombresBanda(base){
+  const set=new Map(); // norm -> nombre
+  const add=n=>{ n=n.trim(); if(n && n!=="—" && norm(n)!=="vacante") set.set(norm(n), n); };
+  (FIJOS[base].lideres||[]).forEach(([n])=>add(n));
+  FIJOS[base].musicos.forEach(([n])=>n.split("/").forEach(add));
+  VOCES[base].forEach(rot=>rot.forEach(add));
+  return set;
+}
+function miembrosDe(base, rotIdx, idPorNombre){
+  const vistos=new Set(); const out=[];
+  const push=(nombre,rol)=>{
+    nombre=nombre.trim(); if(!nombre||nombre==="—"||norm(nombre)==="vacante") return;
+    const id=idPorNombre[norm(nombre)]; if(!id) return;
+    const clave=id+"|"+rol; if(vistos.has(clave)) return; vistos.add(clave);
+    out.push({servidorId:id, rol});
+  };
+  (FIJOS[base].lideres||[]).forEach(([n,r])=>push(n,r));
+  FIJOS[base].musicos.forEach(([n,r])=>n.split("/").forEach(x=>push(x, n.includes("/") ? r+" (rota)" : r)));
+  VOCES[base][rotIdx].forEach((n,i)=>push(n, ROLES_VOCES[i]));
+  return out;
+}
+
+$("btnRun").onclick=async ()=>{
+  $("btnRun").disabled=true;
+  try{
+    // 1) Servidores
+    log("Leyendo servidores existentes…");
+    const snap=await db.collection("servidores").get();
+    const idPorNombre={};
+    snap.docs.forEach(d=>idPorNombre[norm(d.data().nombre)]=d.id);
+    const todos=new Map();
+    Object.keys(FIJOS).forEach(b=>nombresBanda(b).forEach((v,k)=>todos.set(k,v)));
+    log("Personas en las bandas: "+todos.size);
+    if($("chkServ").checked){
+      let creados=0;
+      const batch=db.batch();
+      todos.forEach((nombre,key)=>{
+        if(!idPorNombre[key]){
+          const ref=db.collection("servidores").doc();
+          batch.set(ref,{nombre, email:"", telefono:"", actividades:[], noDisponible:[]});
+          idPorNombre[key]=ref.id; creados++;
+        }
+      });
+      if(creados) await batch.commit();
+      log("Servidores creados: "+creados+" (los demás ya existían)");
+    }
+    // 2) Bandas
+    if($("chkBandas").checked){
+      const batch=db.batch();
+      let n=0;
+      Object.keys(FIJOS).forEach(base=>{
+        VOCES[base].forEach((_,i)=>{
+          const id=base+"_rot"+(i+1);
+          const nombre=FIJOS[base].titulo+" — Rot "+(i+1)+" ("+FIJOS[base].dia+")";
+          batch.set(db.collection("bandas").doc(id), {nombre, miembros:miembrosDe(base,i,idPorNombre)});
+          n++;
+        });
+      });
+      await batch.commit();
+      log("Bandas creadas/actualizadas: "+n);
+    }
+    // 3) Asignación del mes
+    if($("chkAsignar").checked){
+      const mes=$("mesAsignar").value;
+      if(!mes){ log("Elegí un mes para asignar.", true); }
+      else{
+        const inv=$("chkInvertido").checked, pisar=$("chkPisar").checked;
+        log("Asignando bandas a las reuniones de "+mes+(inv?" (mes invertido)":"")+"…");
+        const [reuSnap, adoSnap]=await Promise.all([
+          db.collection("reuniones").where("mes","==",mes).get(),
+          db.collection("adoracion").where("mes","==",mes).get()
+        ]);
+        const yaAsignadas={}; adoSnap.docs.forEach(d=>{ if(d.data().bandaId) yaAsignadas[d.id]=true; });
+        const reuniones=reuSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+        if(!reuniones.length) log("No hay reuniones generadas en "+mes+". Generalas primero en la app.", true);
+        const adns=reuniones.filter(r=>(r.titulo||"").includes("ADN"));
+        const batch=db.batch();
+        let asignadas=0, saltadas=0;
+        reuniones.forEach(r=>{
+          const d=new Date(+r.fecha.slice(0,4), +r.fecha.slice(5,7)-1, +r.fecha.slice(8));
+          const dow=d.getDay();
+          const sem=Math.ceil(d.getDate()/7);
+          let bandaId=null;
+          if(dow===0){ // domingo: AM/PM alterna por semana, invertible por mes
+            const rot=((sem-1)%4)+1;
+            const b1am = inv ? sem%2===0 : sem%2===1;
+            const am = b1am ? "b1" : "b2";
+            const pm = b1am ? "b2" : "b1";
+            bandaId=(r.hora==="10:00"?am:pm)+"_rot"+rot;
+          }else if(dow===3){ bandaId="b4_rot"+(((sem-1)%2)+1); }
+          else if(dow===4){ bandaId="b3_rot"+(((sem-1)%4)+1); }
+          else if(dow===6 && (r.titulo||"").includes("ADN")){
+            bandaId="b5_rot"+((adns.indexOf(adns.find(x=>x.id===r.id))%2)+1);
+          }
+          if(!bandaId){ saltadas++; return; }
+          if(yaAsignadas[r.id] && !pisar){ saltadas++; return; }
+          batch.set(db.collection("adoracion").doc(r.id), {mes, reunionId:r.id, bandaId}, {merge:true});
+          asignadas++;
+        });
+        await batch.commit();
+        log("Reuniones con banda asignada: "+asignadas+(saltadas?" · saltadas: "+saltadas+" (especiales o ya asignadas)":""));
+      }
+    }
+    log("✔ Migración terminada. Abrí la app y revisá Adoración → Bandas y la Planificación del mes.");
+  }catch(e){
+    log("ERROR: "+e.message, true);
+  }
+  $("btnRun").disabled=false;
+};
+</script>
+</body>
+</html>
