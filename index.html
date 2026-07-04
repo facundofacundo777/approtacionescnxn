@@ -619,7 +619,7 @@ function suscribirMes(){
     state.reuniones = s.docs.map(d=>({id:d.id, ...d.data()}))
       .sort((a,b)=> (a.fecha+a.hora).localeCompare(b.fecha+b.hora));
     renderPlan(); renderStats();
-  }));
+  }, e=>toast("Error al sincronizar reuniones: "+e.message, true)));
   unsubMes.push(db.collection("asignaciones").where("mes","==",state.mes).onSnapshot(s=>{
     state.asignaciones={};
     s.docs.forEach(d=>{
@@ -630,7 +630,7 @@ function suscribirMes(){
     });
     renderPlan(); renderStats();
     if(state.sheetReunionId) renderSheet();
-  }));
+  }, e=>toast("Error al sincronizar asignaciones: "+e.message, true)));
 }
 
 function renderTodo(){ renderPlan(); renderServidores(); renderAreas(); renderStats(); if(state.sheetReunionId) renderSheet(); }
@@ -822,6 +822,11 @@ window.copiarDesde = async function(srcId){
         if(cambio) tx.set(refs[i], {mes:state.mes, reunionId:destinoId, areaId:a.id, slots:sl}, {merge:true});
       });
     });
+    // Refresco inmediato del destino
+    const dest=await db.collection("asignaciones").where("reunionId","==",destinoId).get();
+    const rv = state.asignaciones[destinoId] = {slots:{}};
+    dest.docs.forEach(d=>{ const x=d.data(); for(const act in (x.slots||{})) rv.slots[x.areaId+"."+act]=x.slots[act]; });
+    renderPlan(); renderStats(); if(state.sheetReunionId) renderSheet();
     toast(agregados
       ? agregados+" asignados"+(omitidos?" · "+omitidos+" omitidos (ya ocupados, sin cupo o eliminados)":"")
       : "No había nada para copiar"+(omitidos?" ("+omitidos+" omitidos)":""));
@@ -914,6 +919,13 @@ window.asignar = async function(servidorId){
       arr.push(servidorId);
       tx.set(refs[idx], {mes:state.mes, reunionId, areaId, slots:{...cur, [actId]:arr}}, {merge:true});
     });
+    // Actualización inmediata en pantalla (el servidor confirma por detrás)
+    const rv = state.asignaciones[reunionId] = state.asignaciones[reunionId]||{slots:{}};
+    const kv = areaId+"."+actId;
+    const local = (rv.slots[kv]||[]).slice();
+    if(!local.includes(servidorId)) local.push(servidorId);
+    rv.slots[kv]=local;
+    renderPlan(); renderStats(); renderSheet();
     $("pickerOverlay").classList.remove("open");
     toast("Asignado: "+(servidor(servidorId)?.nombre||""));
   }catch(e){
@@ -939,6 +951,9 @@ window.quitarAsignacion = async function(key, servidorId){
     slots[actId]=(slots[actId]||[]).filter(id=>id!==servidorId);
     tx.set(ref,{mes:state.mes, reunionId, areaId, slots},{merge:true});
   });
+  const rv = state.asignaciones[reunionId];
+  if(rv && rv.slots[key]) rv.slots[key]=rv.slots[key].filter(id=>id!==servidorId);
+  renderPlan(); renderStats(); renderSheet();
   toast("Quitado");
 };
 
