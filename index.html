@@ -612,6 +612,18 @@ table.stats tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- ===== Modal: cubrir puesto de banda ===== -->
+<div class="modal-overlay" id="adoPickerOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="adoPickerTitle">Cubrir puesto</h3><button class="close-x" data-close="adoPickerOverlay">✕</button></div>
+    <div class="modal-body">
+      <input class="search-box" id="adoPickerSearch" type="text" placeholder="Buscar servidor…">
+      <label class="toggle-line"><input type="checkbox" id="adoPickerAll"> Mostrar todos, aunque no tengan este rol</label>
+      <div class="picker-list" id="adoPickerList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Modal: elegir canción ===== -->
 <div class="modal-overlay" id="cancPickerOverlay">
   <div class="modal">
@@ -969,11 +981,26 @@ function bandaDe(reunionId){
   const ado=state.adoracion[reunionId];
   return ado&&ado.bandaId ? state.bandas.find(b=>b.id===ado.bandaId) : null;
 }
+// Equipo del día: puestos con quién los cubre. Si la reunión todavía no tiene
+// equipo propio guardado, se deriva de la plantilla de la banda.
+function equipoDe(reunionId){
+  const ado=state.adoracion[reunionId];
+  if(!ado || !ado.bandaId) return null;
+  if(Array.isArray(ado.equipo)) return ado.equipo;
+  const b=state.bandas.find(x=>x.id===ado.bandaId);
+  return b ? (b.miembros||[]).map(m=>({rol:m.rol||"", servidorId:m.servidorId||null})) : [];
+}
+// "Batería (rota)" → "Batería"; "Voz — Dir 3" → "Voces"
+function rolCatalogo(rol){
+  rol=String(rol||"").replace(" (rota)","").trim();
+  if(/^voz/i.test(rol)) return "Voces";
+  return rol;
+}
 function cupoTotal(reunionId){
   let t = areasEsp().reduce((t,a)=>t+a.actividades.reduce((x,ac)=>x+ac.cupo,0),0);
   if(state.espacio==="adoracion" && reunionId){
-    const b=bandaDe(reunionId);
-    if(b) t += (b.miembros||[]).length;
+    const eq=equipoDe(reunionId);
+    if(eq) t += eq.length;
   }
   return t;
 }
@@ -985,8 +1012,8 @@ function cubiertos(reunionId){
     n += Math.min(arr.length, ac.cupo);
   }));
   if(state.espacio==="adoracion"){
-    const b=bandaDe(reunionId);
-    if(b) n += (b.miembros||[]).length;
+    const eq=equipoDe(reunionId);
+    if(eq) n += eq.filter(e=>e.servidorId && servidor(e.servidorId)).length;
   }
   return n;
 }
@@ -1017,10 +1044,12 @@ function renderPlan(){
       const bC=bandaDe(r.id);
       if(!bC){ cls="empty"; txt="Sin banda"; }
       else{
-        const adics = n-(bC.miembros||[]).length;
-        const cupoAd = total-(bC.miembros||[]).length;
-        cls = adics>=cupoAd ? "full" : "partial";
-        txt = "Banda ✓ · "+adics+"/"+cupoAd+" adicionales";
+        const eq=equipoDe(r.id)||[];
+        const cubB=eq.filter(e=>e.servidorId && servidor(e.servidorId)).length;
+        const adics=n-cubB;
+        const cupoAd=total-eq.length;
+        txt=(cubB<eq.length ? "Banda "+cubB+"/"+eq.length : "Banda ✓")+" · "+adics+"/"+cupoAd+" adicionales";
+        cls = cubB<eq.length ? "empty" : (adics>=cupoAd ? "full" : "partial");
       }
     }
     let segs=""; for(let i=0;i<total;i++) segs+=`<span class="cov-seg${i<n?" on":""}"></span>`;
@@ -1189,9 +1218,9 @@ $("btnWsp").onclick = ()=>{
   const bandaW=adoW.bandaId?state.bandas.find(b=>b.id===adoW.bandaId):null;
   if((state.espacio==="adoracion"||sheetCompleto()) && bandaW){
     txt+="\n*BANDA: "+bandaW.nombre.toUpperCase()+"*\n";
-    (bandaW.miembros||[]).forEach(m=>{
-      const s=servidor(m.servidorId);
-      txt+="• "+(m.rol?m.rol+": ":"")+(s?s.nombre:"?")+"\n";
+    (equipoDe(r.id)||[]).forEach(m=>{
+      const s=m.servidorId?servidor(m.servidorId):null;
+      txt+="• "+(m.rol?m.rol+": ":"")+(s?s.nombre:"_falta cubrir_")+"\n";
     });
   }
   if((state.espacio==="adoracion"||sheetCompleto()) && (adoW.setlist||[]).length){
@@ -1873,15 +1902,21 @@ function renderSheetAdo(r){
     html += `<div class="chips"><span class="chip">${banda?escapeHtml(banda.nombre):"Sin banda"}</span></div>`;
   }
   if(banda){
-    html += `<div class="chips" style="margin-top:8px">`+(banda.miembros||[]).map(m=>{
-      const s = servidor(m.servidorId);
-      const nombre = s ? s.nombre : "(eliminado)";
-      const conf = s ? conflictoDe(s.id, r.id) : null;
-      const nd = s && (s.noDisponible||[]).includes(r.fecha);
-      const warn = nd ? "no disponible ese día" : (conf ? "también en "+nombreActividad(conf) : null);
+    const eq = equipoDe(r.id)||[];
+    html += `<div class="chips" style="margin-top:8px">`+eq.map((m,i)=>{
+      const s = m.servidorId ? servidor(m.servidorId) : null;
+      if(!s){
+        return editable
+          ? `<button class="chip-add" onclick="abrirPickerAdo(${i})">+ ${escapeHtml(m.rol||"Puesto")}</button>`
+          : `<span class="chip" style="opacity:.6">${escapeHtml(m.rol||"Puesto")}: vacante</span>`;
+      }
+      const conf = conflictoDe(s.id, r.id);
+      const nd = (s.noDisponible||[]).includes(r.fecha);
+      const warn = nd ? "no disponible" : (conf ? "también en "+nombreActividad(conf) : null);
+      const quitar = editable ? `<button onclick="quitarEquipo(${i})" title="Quitar" style="background:none;border:none;cursor:pointer;color:inherit;font-size:13px;padding:0 0 0 2px">✕</button>` : "";
       return warn
-        ? `<span class="warn-chip">⚠ ${escapeHtml(nombre)} · ${escapeHtml(warn)}</span>`
-        : `<span class="chip">${escapeHtml(nombre)}${m.rol?`&nbsp;<span style="color:var(--ink-faint);font-weight:400;font-size:11px">${escapeHtml(m.rol)}</span>`:""}</span>`;
+        ? `<span class="warn-chip">⚠ ${escapeHtml(s.nombre)}&nbsp;<span style="font-weight:400;font-size:11px">${escapeHtml(m.rol||"")} · ${escapeHtml(warn)}</span>${quitar}</span>`
+        : `<span class="chip">${escapeHtml(s.nombre)}${m.rol?`&nbsp;<span style="color:var(--ink-faint);font-weight:400;font-size:11px">${escapeHtml(m.rol)}</span>`:""}${quitar}</span>`;
     }).join("")+`</div>`;
   }
   html += `</div>`;
@@ -1918,7 +1953,68 @@ async function guardarAdo(reunionId, cambios){
 }
 window.setBandaReunion = v => {
   if(!puedeAsignarBanda()){ toast("Solo un líder general de Adoración puede asignar la banda", true); return; }
-  guardarAdo(state.sheetReunionId, {bandaId: v||null});
+  const b = v ? state.bandas.find(x=>x.id===v) : null;
+  const equipo = b ? (b.miembros||[]).map(m=>({rol:m.rol||"", servidorId:m.servidorId||null})) : [];
+  guardarAdo(state.sheetReunionId, {bandaId: v||null, equipo});
+};
+window.quitarEquipo = i=>{
+  if(!puedeEditarSetlist(state.sheetReunionId)) return;
+  const eq=(equipoDe(state.sheetReunionId)||[]).map(e=>({...e}));
+  if(!eq[i]) return;
+  eq[i].servidorId=null;
+  guardarAdo(state.sheetReunionId, {equipo:eq});
+};
+window.abrirPickerAdo = i=>{
+  if(!puedeEditarSetlist(state.sheetReunionId)){ toast("No tenés permiso sobre esta reunión", true); return; }
+  state.pickerAdo=i;
+  const eq=equipoDe(state.sheetReunionId)||[];
+  $("adoPickerTitle").textContent="Cubrir: "+((eq[i]&&eq[i].rol)||"Puesto");
+  $("adoPickerSearch").value=""; $("adoPickerAll").checked=false;
+  renderPickerAdo();
+  $("adoPickerOverlay").classList.add("open");
+};
+$("adoPickerSearch").oninput=()=>renderPickerAdo();
+$("adoPickerAll").onchange=()=>renderPickerAdo();
+function renderPickerAdo(){
+  const i=state.pickerAdo;
+  const reunionId=state.sheetReunionId;
+  const r=state.reuniones.find(x=>x.id===reunionId);
+  const eq=equipoDe(reunionId)||[];
+  const puesto=eq[i]; if(!puesto || !r) return;
+  const rolCat=rolCatalogo(puesto.rol);
+  const q=$("adoPickerSearch").value.toLowerCase();
+  const todos=$("adoPickerAll").checked;
+  const enEquipo=new Set(); eq.forEach(e=>{ if(e.servidorId) enEquipo.add(e.servidorId); });
+  const lista=state.servidores
+    .filter(s=> todos || (s.rolesAdoracion||[]).includes(rolCat))
+    .filter(s=> !q || s.nombre.toLowerCase().includes(q));
+  if(!lista.length){
+    $("adoPickerList").innerHTML=`<div class="empty-state"><strong>Nadie con el rol "${escapeHtml(rolCat)}"</strong>Probá "Mostrar todos" o cargale el rol al servidor en su ficha.</div>`;
+    return;
+  }
+  $("adoPickerList").innerHTML=lista.map(s=>{
+    const dup=enEquipo.has(s.id);
+    const conf=conflictoDe(s.id, reunionId);
+    const nd=(s.noDisponible||[]).includes(r.fecha);
+    const dis=(dup||conf||nd)?"disabled":"";
+    const estado = dup ? "ya está en la banda de hoy"
+      : conf ? "ocupado en "+escapeHtml(nombreActividad(conf))
+      : nd ? "no disponible ese día"
+      : "disponible";
+    return `<button class="picker-row" ${dis} onclick="asignarEquipo('${s.id}')">
+      <span class="pname">${escapeHtml(s.nombre)}</span>
+      <span class="pstate${(dup||conf||nd)?" conf":""}">${estado}</span></button>`;
+  }).join("");
+}
+window.asignarEquipo = sid=>{
+  if(!puedeEditarSetlist(state.sheetReunionId)) return;
+  const i=state.pickerAdo;
+  const eq=(equipoDe(state.sheetReunionId)||[]).map(e=>({...e}));
+  if(!eq[i]) return;
+  eq[i].servidorId=sid;
+  guardarAdo(state.sheetReunionId, {equipo:eq});
+  $("adoPickerOverlay").classList.remove("open");
+  toast("Asignado: "+(servidor(sid)?.nombre||""));
 };
 window.setlistCampo = (i,campo,v)=>{
   if(!puedeEditarSetlist(state.sheetReunionId)){ toast("No tenés permiso sobre el setlist de esta reunión", true); return; }
@@ -2044,6 +2140,27 @@ $("btnSaveBanda").onclick=async ()=>{
     if(!sel.value) return null;
     return {servidorId:sel.value, rol:inp.value.trim()};
   }).filter(Boolean);
+  if(state.editBandaId){
+    // Congelar el histórico: las reuniones pasadas de esta banda que todavía
+    // derivaban su equipo de la plantilla quedan fijadas con la formación anterior.
+    try{
+      const vieja=state.bandas.find(x=>x.id===state.editBandaId);
+      const eqViejo=(vieja?.miembros||[]).map(m=>({rol:m.rol||"", servidorId:m.servidorId||null}));
+      const h=new Date();
+      const hoyStr=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");
+      const snapAdo=await db.collection("adoracion").where("bandaId","==",state.editBandaId).get();
+      const batchC=db.batch(); let congeladas=0;
+      snapAdo.docs.forEach(d=>{
+        const x=d.data();
+        const fecha=String(x.reunionId||d.id).slice(0,10);
+        if(fecha < hoyStr && !Array.isArray(x.equipo)){
+          batchC.set(d.ref, {equipo:eqViejo}, {merge:true});
+          congeladas++;
+        }
+      });
+      if(congeladas) await batchC.commit();
+    }catch(e){ toast("No se pudo congelar el histórico: "+e.message, true); return; }
+  }
   if(state.editBandaId) await db.collection("bandas").doc(state.editBandaId).set({nombre, miembros},{merge:true});
   else await db.collection("bandas").add({nombre, miembros});
   $("bandaOverlay").classList.remove("open");
