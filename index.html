@@ -425,6 +425,7 @@ table.stats tr:last-child td{border-bottom:none}
     </div>
   </div>
   <div style="padding:10px 22px;border-bottom:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-ghost btn-sm" id="btnVistaCompleta" style="display:none">Ver todo el día</button>
     <button class="btn btn-ghost btn-sm" id="btnCopiar">⧉ Copiar equipo de…</button>
     <button class="btn btn-amber btn-sm" id="btnWsp">Compartir por WhatsApp</button>
   </div>
@@ -786,6 +787,16 @@ function espaciosDe(u){
 function espaciosPermitidos(){ return esAdmin() ? ["tecnica","adoracion"] : espaciosDe(state.userDoc); }
 function areaEnEspacio(id){ return state.espacio==="adoracion" ? id==="adoracion" : id!=="adoracion"; }
 function areasEsp(){ return state.areas.filter(a=>areaEnEspacio(a.id)); }
+function bandasPermitidas(){ // null = todas
+  if(esAdmin()) return null;
+  const b=state.userDoc && state.userDoc.bandas;
+  return (Array.isArray(b) && b.length) ? b : null;
+}
+function puedeEditarBanda(bandaId){
+  if(!puedeEditarArea("adoracion")) return false;
+  const perm=bandasPermitidas();
+  return !perm || perm.includes(String(bandaId).split("_")[0]);
+}
 
 function mostrarEleccionEspacio(){
   const esp=espaciosPermitidos();
@@ -1002,8 +1013,17 @@ function renderPlan(){
 }
 
 /* ---------- Panel de reunión ---------- */
+let vistaCompleta=false;
+function sheetCompleto(){ return vistaCompleta && espaciosPermitidos().length>1; }
+$("btnVistaCompleta").onclick=()=>{
+  vistaCompleta=!vistaCompleta;
+  $("btnVistaCompleta").textContent = vistaCompleta ? "Ver solo mi espacio" : "Ver todo el día";
+  renderSheet();
+};
 window.abrirReunion = function(id){
   state.sheetReunionId=id;
+  $("btnVistaCompleta").style.display = espaciosPermitidos().length>1 ? "" : "none";
+  $("btnVistaCompleta").textContent = vistaCompleta ? "Ver solo mi espacio" : "Ver todo el día";
   renderSheet();
   $("sheetOverlay").classList.add("open");
   $("sheet").classList.add("open");
@@ -1019,8 +1039,8 @@ function renderSheet(){
   $("sheetSub").textContent = fmtFecha(r.fecha)+" de "+MESES[fechaLocal(r.fecha).getMonth()]+" · "+r.hora+" hs";
   $("btnDelReunion").style.display = esAdmin() ? "" : "none";
   const asig = state.asignaciones[r.id]?.slots || {};
-  let html = state.espacio==="adoracion" ? renderSheetAdo(r) : "";
-  areasEsp().forEach(a=>{
+  let html = (state.espacio==="adoracion" || sheetCompleto()) ? renderSheetAdo(r) : "";
+  (sheetCompleto() ? state.areas : areasEsp()).forEach(a=>{
     const editable = puedeEditarArea(a.id);
     html += `<div class="area-block"><div class="area-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
     a.actividades.forEach(ac=>{
@@ -1135,14 +1155,14 @@ $("btnWsp").onclick = ()=>{
   let txt="*"+r.titulo+"* — "+DIAS[d.getDay()]+" "+d.getDate()+"/"+String(d.getMonth()+1).padStart(2,"0")+" · "+r.hora+" hs\n";
   const adoW=state.adoracion[r.id]||{};
   const bandaW=adoW.bandaId?state.bandas.find(b=>b.id===adoW.bandaId):null;
-  if(state.espacio==="adoracion" && bandaW){
+  if((state.espacio==="adoracion"||sheetCompleto()) && bandaW){
     txt+="\n*BANDA: "+bandaW.nombre.toUpperCase()+"*\n";
     (bandaW.miembros||[]).forEach(m=>{
       const s=servidor(m.servidorId);
       txt+="• "+(m.rol?m.rol+": ":"")+(s?s.nombre:"?")+"\n";
     });
   }
-  if(state.espacio==="adoracion" && (adoW.setlist||[]).length){
+  if((state.espacio==="adoracion"||sheetCompleto()) && (adoW.setlist||[]).length){
     txt+="\n*SETLIST*\n";
     adoW.setlist.forEach((it,i)=>{
       const c=state.canciones.find(x=>x.id===it.cancionId);
@@ -1150,7 +1170,7 @@ $("btnWsp").onclick = ()=>{
     });
   }
   let faltan=0;
-  areasEsp().forEach(a=>{
+  (sheetCompleto() ? state.areas : areasEsp()).forEach(a=>{
     let bloque="";
     a.actividades.forEach(ac=>{
       const ids=slots[slotKey(a.id,ac.id)]||[];
@@ -1324,10 +1344,16 @@ $("btnSaveReunion").onclick = async ()=>{
 };
 
 /* ---------- Servidores ---------- */
+function servidorEnEspacio(s){
+  const tieneAdo=(s.rolesAdoracion||[]).length>0 || (s.actividades||[]).some(k=>k.startsWith("adoracion."));
+  const tieneTec=(s.actividades||[]).some(k=>!k.startsWith("adoracion."));
+  if(!tieneAdo && !tieneTec) return true; // sin clasificar: visible en ambos espacios
+  return state.espacio==="adoracion" ? tieneAdo : tieneTec;
+}
 $("servSearch").oninput=renderServidores;
 function renderServidores(){
   const q=$("servSearch").value.toLowerCase();
-  const lista = state.servidores.filter(s=>{
+  const lista = state.servidores.filter(servidorEnEspacio).filter(s=>{
     if(!q) return true;
     const acts=(s.actividades||[]).map(nombreActividad).join(" ").toLowerCase();
     return s.nombre.toLowerCase().includes(q)||acts.includes(q);
@@ -1590,12 +1616,17 @@ function renderUsuarios(){
     const espU = espaciosDe(u);
     const espChecks = ["tecnica","adoracion"].map(e=>
       `<label class="check-item" style="display:inline-flex;margin:2px 4px 0 0"><input type="checkbox" value="${e}" ${espU.includes(e)?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioEspacio('${u.id}',this)"><span>${e==="tecnica"?"Técnica":"Adoración"}</span></label>`).join("");
+    const bases={}; state.bandas.forEach(b=>{ const base=b.id.split("_")[0]; if(!bases[base]) bases[base]=(b.nombre||base).split(" —")[0]; });
+    const bandasU=u.bandas||[];
+    const bandChecks=Object.keys(bases).sort().map(k=>
+      `<label class="check-item" style="display:inline-flex;margin:2px 4px 0 0"><input type="checkbox" value="${k}" ${bandasU.includes(k)?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioBanda('${u.id}',this)"><span>${escapeHtml(bases[k])}</span></label>`).join("");
     return `<div class="row-item" style="flex-wrap:wrap">
       <div class="row-main" style="flex:1;min-width:200px">
         <div class="row-title">${escapeHtml(u.nombre||u.email)}</div>
         <div class="row-sub">${escapeHtml(u.email||"")}</div>
         <div style="margin-top:6px">${fijo?'<span class="tag">Admin fijo (configurado en el archivo)</span>':areasChecks}</div>
         <div style="margin-top:6px"><span class="nota-meta">ESPACIOS: </span>${fijo?'<span class="tag">Técnica y Adoración</span>':espChecks}</div>
+        <div style="margin-top:6px"><span class="nota-meta">BANDAS QUE PUEDE EDITAR (vacío = todas): </span>${fijo?'<span class="tag">Todas</span>':(bandChecks||'<span class="tag">Aún no hay bandas</span>')}</div>
       </div>
       <div class="row-actions">
         <select ${fijo?"disabled":""} onchange="setUsuarioRol('${u.id}',this.value)" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper)">
@@ -1612,6 +1643,13 @@ window.setUsuarioEspacio=async (id,input)=>{
   input.checked ? esp.add(input.value) : esp.delete(input.value);
   await db.collection("usuarios").doc(id).update({espacios:[...esp]});
   toast("Acceso actualizado");
+};
+window.setUsuarioBanda=async (id,input)=>{
+  const u=state.usuarios.find(x=>x.id===id);
+  let bs=new Set(u.bandas||[]);
+  input.checked ? bs.add(input.value) : bs.delete(input.value);
+  await db.collection("usuarios").doc(id).update({bandas:[...bs]});
+  toast("Bandas actualizadas");
 };
 window.delUsuario=async id=>{
   const u=state.usuarios.find(x=>x.id===id);
@@ -1897,14 +1935,14 @@ function renderAdo(){
   const cont=$("adoBody"); if(!cont) return;
   const editable = puedeEditarArea("adoracion");
   if(adoTab==="bandas"){
-    $("btnNuevaBanda").style.display = editable ? "" : "none";
+    $("btnNuevaBanda").style.display = (editable && !bandasPermitidas()) ? "" : "none";
     cont.innerHTML = state.bandas.length ? `<div class="list-card">`+state.bandas.map(b=>`
       <div class="row-item">
         <div class="row-main">
           <div class="row-title">${escapeHtml(b.nombre)}</div>
           <div class="row-sub">${(b.miembros||[]).map(m=>{const s=servidor(m.servidorId); return `<span class="tag">${escapeHtml(s?s.nombre:"?")}${m.rol?" · "+escapeHtml(m.rol):""}</span>`;}).join("")||"Sin integrantes"}</div>
         </div>
-        ${editable?`<div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarBanda('${b.id}')">Editar</button></div>`:""}
+        ${puedeEditarBanda(b.id)?`<div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarBanda('${b.id}')">Editar</button></div>`:""}
       </div>`).join("")+`</div>`
     : `<div class="empty-state"><strong>Todavía no hay bandas</strong>${editable?'Crealas con "+ Banda": nombre e integrantes con su rol. Los integrantes tienen que estar cargados como servidores.':'Un líder de Adoración todavía no cargó las bandas.'}</div>`;
   }else{
@@ -1947,6 +1985,7 @@ $("btnNuevaBanda").onclick=()=>{
 };
 window.editarBanda=id=>{
   const b=state.bandas.find(x=>x.id===id); if(!b) return;
+  if(!puedeEditarBanda(id)){ toast("No tenés permiso sobre esta banda", true); return; }
   state.editBandaId=id;
   $("bandaModalTitle").textContent="Editar: "+b.nombre;
   $("bNombre").value=b.nombre;
@@ -1958,6 +1997,8 @@ $("btnAddMiembro").onclick=()=>$("bMiembros").insertAdjacentHTML("beforeend", fi
 $("btnSaveBanda").onclick=async ()=>{
   const nombre=$("bNombre").value.trim();
   if(!nombre){ toast("Poné un nombre a la banda", true); return; }
+  if(state.editBandaId && !puedeEditarBanda(state.editBandaId)){ toast("No tenés permiso sobre esta banda", true); return; }
+  if(!state.editBandaId && bandasPermitidas()){ toast("Tu acceso es solo a bandas específicas: no podés crear nuevas", true); return; }
   const miembros=[...$("bMiembros").querySelectorAll(".b-miembro")].map(el=>{
     const sel=el.querySelector("select"), inp=el.querySelector("input");
     if(!sel.value) return null;
