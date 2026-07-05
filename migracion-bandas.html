@@ -226,7 +226,10 @@ $("btnRun").onclick=async ()=>{
         reuniones.forEach(r=>{
           const d=new Date(+r.fecha.slice(0,4), +r.fecha.slice(5,7)-1, +r.fecha.slice(8));
           const dow=d.getDay();
-          const sem=Math.ceil(d.getDate()/7);
+          // La semana arranca el domingo: el número de semana de cualquier reunión
+          // es el del domingo que encabeza su semana (puede caer en el mes anterior).
+          const domSem=new Date(d); domSem.setDate(d.getDate()-dow);
+          const sem=Math.ceil(domSem.getDate()/7);
           let bandaId=null;
           if(dow===0){ // domingo: AM/PM alterna por semana, invertible por mes
             const rot=((sem-1)%4)+1;
