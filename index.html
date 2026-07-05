@@ -797,6 +797,14 @@ function puedeEditarBanda(bandaId){
   const perm=bandasPermitidas();
   return !perm || perm.includes(String(bandaId).split("_")[0]);
 }
+function puedeAsignarBanda(){ return puedeEditarArea("adoracion") && !bandasPermitidas(); }
+function puedeEditarSetlist(reunionId){
+  if(!puedeEditarArea("adoracion")) return false;
+  const perm=bandasPermitidas();
+  if(!perm) return true;
+  const doc=state.adoracion[reunionId];
+  return !!(doc && doc.bandaId && perm.includes(String(doc.bandaId).split("_")[0]));
+}
 
 function mostrarEleccionEspacio(){
   const esp=espaciosPermitidos();
@@ -1828,11 +1836,12 @@ window.delNota=async id=>{
 /* ---------- Adoración: banda y setlist en la reunión ---------- */
 function renderSheetAdo(r){
   const doc = state.adoracion[r.id]||{};
-  const editable = puedeEditarArea("adoracion");
+  const editableBanda = puedeAsignarBanda();
+  const editable = puedeEditarSetlist(r.id);
   const banda = doc.bandaId ? state.bandas.find(b=>b.id===doc.bandaId) : null;
-  let html = `<div class="area-block"><div class="area-head"><span class="area-name">Banda y setlist</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+  let html = `<div class="area-block"><div class="area-head"><span class="area-name">Banda y setlist</span>${(editable||editableBanda)?"":'<span class="area-lock">solo lectura</span>'}</div>`;
   html += `<div class="act-row"><div class="act-name"><span>Banda asignada</span></div>`;
-  if(editable){
+  if(editableBanda){
     html += `<select onchange="setBandaReunion(this.value)" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper);color:var(--ink);width:100%">
       <option value="">— Sin banda —</option>`+
       state.bandas.map(b=>`<option value="${b.id}" ${doc.bandaId===b.id?"selected":""}>${escapeHtml(b.nombre)}</option>`).join("")+`</select>`;
@@ -1883,14 +1892,19 @@ async function guardarAdo(reunionId, cambios){
   try{ await db.collection("adoracion").doc(reunionId).set(doc, {merge:true}); }
   catch(e){ toast("No se pudo guardar: "+e.message, true); }
 }
-window.setBandaReunion = v => guardarAdo(state.sheetReunionId, {bandaId: v||null});
+window.setBandaReunion = v => {
+  if(!puedeAsignarBanda()){ toast("Solo un líder general de Adoración puede asignar la banda", true); return; }
+  guardarAdo(state.sheetReunionId, {bandaId: v||null});
+};
 window.setlistCampo = (i,campo,v)=>{
+  if(!puedeEditarSetlist(state.sheetReunionId)){ toast("No tenés permiso sobre el setlist de esta reunión", true); return; }
   const doc=state.adoracion[state.sheetReunionId]||{};
   const sl=(doc.setlist||[]).slice(); if(!sl[i]) return;
   sl[i]={...sl[i], [campo]:v};
   guardarAdo(state.sheetReunionId, {setlist:sl});
 };
 window.setlistMover = (i,d)=>{
+  if(!puedeEditarSetlist(state.sheetReunionId)) return;
   const doc=state.adoracion[state.sheetReunionId]||{};
   const sl=(doc.setlist||[]).slice(); const j=i+d;
   if(j<0||j>=sl.length) return;
@@ -1898,6 +1912,7 @@ window.setlistMover = (i,d)=>{
   guardarAdo(state.sheetReunionId, {setlist:sl});
 };
 window.setlistQuitar = i=>{
+  if(!puedeEditarSetlist(state.sheetReunionId)) return;
   const doc=state.adoracion[state.sheetReunionId]||{};
   const sl=(doc.setlist||[]).slice(); sl.splice(i,1);
   guardarAdo(state.sheetReunionId, {setlist:sl});
@@ -1913,6 +1928,7 @@ function renderCancPicker(){
     : `<div class="empty-state"><strong>No hay canciones con esa búsqueda</strong>Cargalas en la pestaña Adoración → Canciones.</div>`;
 }
 window.setlistAgregar = id=>{
+  if(!puedeEditarSetlist(state.sheetReunionId)){ toast("No tenés permiso sobre el setlist de esta reunión", true); return; }
   const c=state.canciones.find(x=>x.id===id); if(!c) return;
   const doc=state.adoracion[state.sheetReunionId]||{};
   const sl=(doc.setlist||[]).slice();
