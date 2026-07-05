@@ -965,15 +965,29 @@ $("mesNext").onclick=()=>cambiarMes(1);
 function renderMesLabel(){ $("mesLabel").textContent = mesLabel(state.mes); }
 
 /* ---------- Planificación ---------- */
-function cupoTotal(){ return areasEsp().reduce((t,a)=>t+a.actividades.reduce((x,ac)=>x+ac.cupo,0),0); }
+function bandaDe(reunionId){
+  const ado=state.adoracion[reunionId];
+  return ado&&ado.bandaId ? state.bandas.find(b=>b.id===ado.bandaId) : null;
+}
+function cupoTotal(reunionId){
+  let t = areasEsp().reduce((t,a)=>t+a.actividades.reduce((x,ac)=>x+ac.cupo,0),0);
+  if(state.espacio==="adoracion" && reunionId){
+    const b=bandaDe(reunionId);
+    if(b) t += (b.miembros||[]).length;
+  }
+  return t;
+}
 function cubiertos(reunionId){
   const asig = state.asignaciones[reunionId];
-  if(!asig || !asig.slots) return 0;
   let n=0;
-  areasEsp().forEach(a=>a.actividades.forEach(ac=>{
+  if(asig && asig.slots) areasEsp().forEach(a=>a.actividades.forEach(ac=>{
     const arr = asig.slots[slotKey(a.id,ac.id)]||[];
     n += Math.min(arr.length, ac.cupo);
   }));
+  if(state.espacio==="adoracion"){
+    const b=bandaDe(reunionId);
+    if(b) n += (b.miembros||[]).length;
+  }
   return n;
 }
 
@@ -984,7 +998,6 @@ function renderPlan(){
     cont.innerHTML = `<div class="empty-state"><strong>No hay reuniones en ${escapeHtml(mesLabel(state.mes))}</strong>${esAdmin()?'Usá "Generar reuniones" para crear las de este mes.':'Un administrador todavía no generó las reuniones de este mes.'}</div>`;
     return;
   }
-  const total = cupoTotal();
   let html="", semanaActual=null;
   state.reuniones.forEach(r=>{
     const d=fechaLocal(r.fecha);
@@ -995,10 +1008,21 @@ function renderPlan(){
       semanaActual=wk;
       html += `<div class="week-label">Semana del ${inicioSem.getDate()} de ${MESES[inicioSem.getMonth()]}</div><div class="meet-grid">`;
     }
+    const total=cupoTotal(r.id);
     const n=cubiertos(r.id);
     const pct = total? n/total : 0;
-    const cls = pct>=1?"full": pct>0?"partial":"empty";
-    const txt = pct>=1?"Completa": pct>0?(total-n)+" puestos libres":"Sin asignar";
+    let cls = pct>=1?"full": pct>0?"partial":"empty";
+    let txt = pct>=1?"Completa": pct>0?(total-n)+" puestos libres":"Sin asignar";
+    if(state.espacio==="adoracion"){
+      const bC=bandaDe(r.id);
+      if(!bC){ cls="empty"; txt="Sin banda"; }
+      else{
+        const adics = n-(bC.miembros||[]).length;
+        const cupoAd = total-(bC.miembros||[]).length;
+        cls = adics>=cupoAd ? "full" : "partial";
+        txt = "Banda ✓ · "+adics+"/"+cupoAd+" adicionales";
+      }
+    }
     let segs=""; for(let i=0;i<total;i++) segs+=`<span class="cov-seg${i<n?" on":""}"></span>`;
     const badge = r.titulo==="ADN Jóvenes" ? '<span class="badge badge-adn">ADN</span>'
       : r.especial ? '<span class="badge badge-esp">Especial</span>' : "";
@@ -1707,10 +1731,9 @@ function renderStats(){
 function renderInicio(){
   const hoy=new Date();
   const hoyStr=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
-  const total=cupoTotal();
   const proximas=state.reuniones.filter(r=>r.fecha>=hoyStr);
   let vacantes=0;
-  proximas.forEach(r=>vacantes+=Math.max(0, total-cubiertos(r.id)));
+  proximas.forEach(r=>vacantes+=Math.max(0, cupoTotal(r.id)-cubiertos(r.id)));
   $("inicioStats").innerHTML=`
     <div class="stat-card"><div class="stat-num">${proximas.length}</div><div class="stat-label">Reuniones por delante en ${escapeHtml(mesLabel(state.mes))}</div></div>
     <div class="stat-card"><div class="stat-num${vacantes?" alert":""}">${vacantes}</div><div class="stat-label">Puestos sin cubrir</div></div>
@@ -1718,6 +1741,7 @@ function renderInicio(){
     <div class="stat-card"><div class="stat-num${(state.notas||[]).some(n=>!n.resuelta)?" alert":""}">${(state.notas||[]).filter(n=>!n.resuelta).length}</div><div class="stat-label">Notas pendientes</div></div>`;
   $("inicioProximas").innerHTML = proximas.length ? proximas.slice(0,6).map(r=>{
     const n=cubiertos(r.id);
+    const totalR=cupoTotal(r.id);
     const slots=state.asignaciones[r.id]?.slots||{};
     const faltantes=[];
     areasEsp().forEach(a=>a.actividades.forEach(ac=>{
@@ -1732,7 +1756,7 @@ function renderInicio(){
         <div class="row-title">${escapeHtml(r.titulo)} · <span class="mono" style="font-weight:500;font-size:13px">${fmtFecha(r.fecha)} ${r.hora}</span></div>
         <div class="row-sub">${faltantes.length?`<span class="falta">Faltan: ${escapeHtml(faltantes.join(", "))}</span>`:"Equipo completo ✓"}${lineaBanda}</div>
       </div>
-      <span class="mono" style="font-size:12px;color:var(--ink-soft);flex-shrink:0">${n}/${total}</span>
+      <span class="mono" style="font-size:12px;color:var(--ink-soft);flex-shrink:0">${n}/${totalR}</span>
     </div>`;
   }).join("") : `<div class="row-item"><div class="row-main"><div class="row-title">No hay reuniones por delante en ${escapeHtml(mesLabel(state.mes))}</div><div class="row-sub">Cambiá de mes en Planificación o generá las reuniones del mes.</div></div></div>`;
 }
