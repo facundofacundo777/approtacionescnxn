@@ -28,6 +28,7 @@ hr{border:none;border-top:1px solid #E3E6EC;margin:18px 0}
   <div id="paso2" style="display:none">
     <hr>
     <label><input type="checkbox" id="chkServ" checked> Crear servidores que falten (por nombre)</label>
+    <label><input type="checkbox" id="chkRoles" checked> Asignar roles de adoración a cada persona (según su banda)</label>
     <label><input type="checkbox" id="chkBandas" checked> Crear / actualizar las 16 bandas</label>
     <label><input type="checkbox" id="chkAsignar" checked> Asignar bandas a las reuniones del mes:
       <input type="month" id="mesAsignar"></label>
@@ -151,8 +152,8 @@ $("btnRun").onclick=async ()=>{
     // 1) Servidores
     log("Leyendo servidores existentes…");
     const snap=await db.collection("servidores").get();
-    const idPorNombre={};
-    snap.docs.forEach(d=>idPorNombre[norm(d.data().nombre)]=d.id);
+    const idPorNombre={}; const datosPorNombre={};
+    snap.docs.forEach(d=>{ const k=norm(d.data().nombre); idPorNombre[k]=d.id; datosPorNombre[k]=d.data(); });
     const todos=new Map();
     Object.keys(FIJOS).forEach(b=>nombresBanda(b).forEach((v,k)=>todos.set(k,v)));
     log("Personas en las bandas: "+todos.size);
@@ -168,6 +169,27 @@ $("btnRun").onclick=async ()=>{
       });
       if(creados) await batch.commit();
       log("Servidores creados: "+creados+" (los demás ya existían)");
+    }
+    // 1b) Roles de adoración por persona (derivados de las bandas)
+    if($("chkRoles").checked){
+      const rolesPor={};
+      const addRol=(n,rol)=>{ n=(n||"").trim(); if(!n||n==="—"||norm(n)==="vacante") return; const k=norm(n); (rolesPor[k]=rolesPor[k]||new Set()).add(rol); };
+      Object.keys(FIJOS).forEach(b=>{
+        (FIJOS[b].lideres||[]).forEach(([n,r])=>addRol(n,r));
+        FIJOS[b].musicos.forEach(([n,r])=>n.split("/").forEach(x=>addRol(x,r)));
+        VOCES[b].forEach(rot=>rot.forEach(n=>addRol(n,"Voces")));
+      });
+      const batch=db.batch();
+      let conRoles=0;
+      Object.keys(rolesPor).forEach(k=>{
+        const id=idPorNombre[k]; if(!id) return;
+        const previos=(datosPorNombre[k]&&datosPorNombre[k].rolesAdoracion)||[];
+        const union=[...new Set([...previos, ...rolesPor[k]])];
+        batch.set(db.collection("servidores").doc(id), {rolesAdoracion:union}, {merge:true});
+        conRoles++;
+      });
+      await batch.commit();
+      log("Roles de adoración asignados a "+conRoles+" personas (se conservan los que ya tenían)");
     }
     // 2) Bandas
     if($("chkBandas").checked){
