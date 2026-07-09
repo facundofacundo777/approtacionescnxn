@@ -557,9 +557,11 @@ table.stats tr:last-child td{border-bottom:none}
     <div class="modal-body">
       <div class="field"><label>Nombre de la banda</label><input type="text" id="bNombre" placeholder="Ej: Banda 1"></div>
       <div class="field"><label>Integrantes por puesto (los puestos se definen en Áreas → Adoración)</label><div id="bMiembros"></div></div>
+      <label class="toggle-line" id="bPropagarWrap" style="display:none"><input type="checkbox" id="bPropagar"> Aplicar líderes y músicos (todo menos las voces) también a las otras rotaciones de esta banda</label>
     </div>
     <div class="modal-foot">
       <button class="btn btn-danger btn-sm" id="btnDelBanda" style="margin-right:auto;display:none">Eliminar</button>
+      <button class="btn btn-ghost btn-sm" id="btnDupBanda" style="display:none">Duplicar rotación</button>
       <button class="btn btn-ghost" data-close="bandaOverlay">Cancelar</button>
       <button class="btn btn-primary" id="btnSaveBanda">Guardar</button>
     </div>
@@ -2190,6 +2192,9 @@ window.agregarMiembroBanda=sid=>{
 $("btnNuevaBanda").onclick=()=>{
   state.editBandaId=null;
   state.editBandaMiembros=[];
+  $("bPropagar").checked=false;
+  $("bPropagarWrap").style.display="none";
+  $("btnDupBanda").style.display="none";
   $("bandaModalTitle").textContent="Nueva banda";
   $("bNombre").value="";
   renderBandaEditor();
@@ -2201,11 +2206,48 @@ window.editarBanda=id=>{
   if(!puedeEditarBanda(id)){ toast("No tenés permiso sobre esta banda", true); return; }
   state.editBandaId=id;
   state.editBandaMiembros=(b.miembros||[]).map(m=>({...m}));
+  $("bPropagar").checked=false;
+  $("bPropagarWrap").style.display = hermanasDe(id).length ? "" : "none";
+  $("btnDupBanda").style.display="";
   $("bandaModalTitle").textContent="Editar: "+b.nombre;
   $("bNombre").value=b.nombre;
   renderBandaEditor();
   $("btnDelBanda").style.display="";
   $("bandaOverlay").classList.add("open");
+};
+function baseBanda(id){ return String(id||"").split("_")[0]; }
+function hermanasDe(id){ const b=baseBanda(id); return state.bandas.filter(x=>x.id!==id && baseBanda(x.id)===b); }
+async function congelarHistoricoBanda(bandaId){
+  // Las reuniones pasadas de esta banda que todavía derivaban su equipo de la
+  // plantilla quedan fijadas con la formación anterior antes de modificarla.
+  const vieja=state.bandas.find(x=>x.id===bandaId);
+  const eqViejo=(vieja?.miembros||[]).map(m=>({rol:m.rol||"", servidorId:m.servidorId||null}));
+  const h=new Date();
+  const hoyStr=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");
+  const snapAdo=await db.collection("adoracion").where("bandaId","==",bandaId).get();
+  const batchC=db.batch(); let n=0;
+  snapAdo.docs.forEach(d=>{
+    const x=d.data();
+    const fecha=String(x.reunionId||d.id).slice(0,10);
+    if(fecha < hoyStr && !Array.isArray(x.equipo)){ batchC.set(d.ref, {equipo:eqViejo}, {merge:true}); n++; }
+  });
+  if(n) await batchC.commit();
+}
+$("btnDupBanda").onclick=async ()=>{
+  if(!state.editBandaId) return;
+  const base=baseBanda(state.editBandaId);
+  if(!puedeEditarBanda(base+"_rotx")){ toast("No tenés permiso sobre esta banda", true); return; }
+  const nums=state.bandas.filter(x=>baseBanda(x.id)===base)
+    .map(x=>parseInt(String(x.id).split("_rot")[1]||"0",10)).filter(n=>!isNaN(n));
+  const n=Math.max(0,...nums)+1;
+  const id=base+"_rot"+n;
+  const orig=state.bandas.find(x=>x.id===state.editBandaId);
+  let nombre=(orig?.nombre||"Banda").replace(/Rot\s*\d+/i, "Rot "+n);
+  if(nombre===orig?.nombre) nombre=(orig?.nombre||"Banda")+" — Rot "+n;
+  const miembros=(state.editBandaMiembros||[]).filter(m=>m.servidorId).map(m=>({servidorId:m.servidorId, rol:m.rol||""}));
+  await db.collection("bandas").doc(id).set({nombre, miembros});
+  $("bandaOverlay").classList.remove("open");
+  toast("Rotación creada: "+nombre+". Editala para cambiar las voces.");
 };
 $("btnSaveBanda").onclick=async ()=>{
   const nombre=$("bNombre").value.trim();
@@ -2213,29 +2255,26 @@ $("btnSaveBanda").onclick=async ()=>{
   if(state.editBandaId && !puedeEditarBanda(state.editBandaId)){ toast("No tenés permiso sobre esta banda", true); return; }
   if(!state.editBandaId && bandasPermitidas()){ toast("Tu acceso es solo a bandas específicas: no podés crear nuevas", true); return; }
   const miembros=(state.editBandaMiembros||[]).filter(m=>m.servidorId).map(m=>({servidorId:m.servidorId, rol:m.rol||""}));
+  const esVoz=m=>rolCatalogo(m.rol)==="Voces";
   if(state.editBandaId){
-    // Congelar el histórico: las reuniones pasadas de esta banda que todavía
-    // derivaban su equipo de la plantilla quedan fijadas con la formación anterior.
-    try{
-      const vieja=state.bandas.find(x=>x.id===state.editBandaId);
-      const eqViejo=(vieja?.miembros||[]).map(m=>({rol:m.rol||"", servidorId:m.servidorId||null}));
-      const h=new Date();
-      const hoyStr=h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0");
-      const snapAdo=await db.collection("adoracion").where("bandaId","==",state.editBandaId).get();
-      const batchC=db.batch(); let congeladas=0;
-      snapAdo.docs.forEach(d=>{
-        const x=d.data();
-        const fecha=String(x.reunionId||d.id).slice(0,10);
-        if(fecha < hoyStr && !Array.isArray(x.equipo)){
-          batchC.set(d.ref, {equipo:eqViejo}, {merge:true});
-          congeladas++;
-        }
-      });
-      if(congeladas) await batchC.commit();
-    }catch(e){ toast("No se pudo congelar el histórico: "+e.message, true); return; }
+    try{ await congelarHistoricoBanda(state.editBandaId); }
+    catch(e){ toast("No se pudo congelar el histórico: "+e.message, true); return; }
   }
   if(state.editBandaId) await db.collection("bandas").doc(state.editBandaId).set({nombre, miembros},{merge:true});
   else await db.collection("bandas").add({nombre, miembros});
+  // Propagar líderes y músicos (todo menos voces) a las otras rotaciones de la misma banda
+  if(state.editBandaId && $("bPropagar").checked){
+    const fijos=miembros.filter(m=>!esVoz(m));
+    let prop=0;
+    for(const h of hermanasDe(state.editBandaId)){
+      if(!puedeEditarBanda(h.id)) continue;
+      try{ await congelarHistoricoBanda(h.id); }catch(e){ toast("Histórico de "+h.nombre+": "+e.message, true); continue; }
+      const voces=(h.miembros||[]).filter(esVoz);
+      await db.collection("bandas").doc(h.id).set({miembros:[...fijos, ...voces]},{merge:true});
+      prop++;
+    }
+    if(prop) toast("Líderes y músicos aplicados a "+prop+" rotación(es) más");
+  }
   $("bandaOverlay").classList.remove("open");
   toast("Banda guardada: "+nombre);
 };
