@@ -556,9 +556,7 @@ table.stats tr:last-child td{border-bottom:none}
     <div class="modal-head"><h3 id="bandaModalTitle">Banda</h3><button class="close-x" data-close="bandaOverlay">✕</button></div>
     <div class="modal-body">
       <div class="field"><label>Nombre de la banda</label><input type="text" id="bNombre" placeholder="Ej: Banda 1"></div>
-      <div class="field"><label>Integrantes (servidor + rol)</label><div id="bMiembros"></div>
-        <button class="btn btn-ghost btn-sm" id="btnAddMiembro" style="margin-top:8px">+ Integrante</button>
-      </div>
+      <div class="field"><label>Integrantes por puesto (los puestos se definen en Áreas → Adoración)</label><div id="bMiembros"></div></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-danger btn-sm" id="btnDelBanda" style="margin-right:auto;display:none">Eliminar</button>
@@ -856,6 +854,7 @@ async function entrar(){
   else mostrarEleccionEspacio();
 }
 
+const CATALOGO_ADO=["Líder musical","Líder de voces","Director musical","Batería","Bajo","Teclado","Guitarra eléctrica 1","Guitarra eléctrica 2","Guitarra acústica","Vientos","Saxo","Percusión","Voz — Dir A","Voz — Dir 1","Voz — Dir 2","Voz — Dir 3","Voz — Dir 4","Voz — Dir B"];
 async function seedAreas(){
   const snap = await db.collection("areas").limit(1).get();
   if(snap.empty){
@@ -867,8 +866,16 @@ async function seedAreas(){
   if(!ado.exists){
     await db.collection("areas").doc("adoracion").set({
       nombre:"Adoración", orden:0,
-      actividades:[{id:"cantante_adicional", nombre:"Cantante adicional", cupo:4}]
+      actividades:[
+        ...CATALOGO_ADO.map(n=>({id:slug(n), nombre:n, cupo:1, porBanda:true})),
+        {id:"cantante_adicional", nombre:"Cantante adicional", cupo:4}
+      ]
     });
+  }else{
+    const acts=(ado.data().actividades)||[];
+    const nombres=new Set(acts.map(a=>a.nombre));
+    const faltan=CATALOGO_ADO.filter(n=>!nombres.has(n)).map(n=>({id:slug(n), nombre:n, cupo:1, porBanda:true}));
+    if(faltan.length) await db.collection("areas").doc("adoracion").update({actividades:[...faltan, ...acts]});
   }
 }
 
@@ -997,7 +1004,7 @@ function rolCatalogo(rol){
   return rol;
 }
 function cupoTotal(reunionId){
-  let t = areasEsp().reduce((t,a)=>t+a.actividades.reduce((x,ac)=>x+ac.cupo,0),0);
+  let t = areasEsp().reduce((t,a)=>t+a.actividades.reduce((x,ac)=>x+(ac.porBanda?0:ac.cupo),0),0);
   if(state.espacio==="adoracion" && reunionId){
     const eq=equipoDe(reunionId);
     if(eq) t += eq.length;
@@ -1008,6 +1015,7 @@ function cubiertos(reunionId){
   const asig = state.asignaciones[reunionId];
   let n=0;
   if(asig && asig.slots) areasEsp().forEach(a=>a.actividades.forEach(ac=>{
+    if(ac.porBanda) return;
     const arr = asig.slots[slotKey(a.id,ac.id)]||[];
     n += Math.min(arr.length, ac.cupo);
   }));
@@ -1105,6 +1113,7 @@ function renderSheet(){
     const editable = puedeEditarArea(a.id);
     html += `<div class="area-block"><div class="area-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
     a.actividades.forEach(ac=>{
+      if(ac.porBanda) return;
       const key=slotKey(a.id,ac.id);
       const ids = asig[key]||[];
       html += `<div class="act-row"><div class="act-name"><span>${escapeHtml(ac.nombre)}</span><span class="act-count">${ids.length}/${ac.cupo}</span></div><div class="chips">`;
@@ -1234,6 +1243,7 @@ $("btnWsp").onclick = ()=>{
   (sheetCompleto() ? state.areas : areasEsp()).forEach(a=>{
     let bloque="";
     a.actividades.forEach(ac=>{
+      if(ac.porBanda) return;
       const ids=slots[slotKey(a.id,ac.id)]||[];
       ids.forEach(sid=>{ bloque+="• "+ac.nombre+": "+(servidor(sid)?.nombre||"?")+"\n"; });
       for(let i=ids.length;i<ac.cupo;i++){ bloque+="• "+ac.nombre+": _falta cubrir_\n"; faltan++; }
@@ -1434,7 +1444,7 @@ function renderServidores(){
 }
 
 function renderChecksActividades(cont, seleccionadas){
-  cont.innerHTML = state.areas.map(a=>a.actividades.map(ac=>{
+  cont.innerHTML = state.areas.map(a=>a.actividades.filter(ac=>!ac.porBanda).map(ac=>{
     const key=slotKey(a.id,ac.id);
     return `<label class="check-item"><input type="checkbox" value="${key}" ${seleccionadas.includes(key)?"checked":""}><span>${escapeHtml(a.nombre)}: ${escapeHtml(ac.nombre)}</span></label>`;
   }).join("")).join("");
@@ -1614,15 +1624,16 @@ function renderAreas(){
     <div class="row-item">
       <div class="row-main">
         <div class="row-title">${escapeHtml(a.nombre)}</div>
-        <div class="row-sub">${a.actividades.map(ac=>escapeHtml(ac.nombre)+" ("+ac.cupo+")").join(" · ")}</div>
+        <div class="row-sub">${a.actividades.map(ac=>escapeHtml(ac.nombre)+(ac.porBanda?" ♪":"")+" ("+ac.cupo+")").join(" · ")}</div>
       </div>
       <div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarArea('${a.id}')">Editar</button></div>
     </div>`).join("")+`</div>`;
 }
 function filaAct(ac){
-  return `<div style="display:flex;gap:6px;margin-bottom:6px" class="a-act">
+  return `<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center" class="a-act">
     <input type="text" placeholder="Actividad" value="${escapeHtml(ac?.nombre||"")}" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper)">
     <input type="number" min="1" max="20" value="${ac?.cupo||1}" title="Puestos" style="width:64px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--paper)">
+    <label class="check-item" style="padding:6px 8px" title="El puesto se cubre con la banda asignada, no con asignación individual"><input type="checkbox" class="a-pb" ${ac?.porBanda?"checked":""}><span style="font-size:11px">banda</span></label>
     <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()">✕</button></div>`;
 }
 $("btnNuevaArea").onclick=()=>{
@@ -1649,7 +1660,9 @@ $("btnSaveArea").onclick=async ()=>{
   const actividades=[...$("aActs").querySelectorAll(".a-act")].map(el=>{
     const [inN,inC]=el.querySelectorAll("input");
     const n=inN.value.trim(); if(!n) return null;
-    return {id: el.dataset.actId || slug(n), nombre:n, cupo:Math.max(1,+inC.value||1)};
+    const act={id: el.dataset.actId || slug(n), nombre:n, cupo:Math.max(1,+inC.value||1)};
+    if(el.querySelector(".a-pb").checked) act.porBanda=true;
+    return act;
   }).filter(Boolean);
   if(!actividades.length){ toast("Agregá al menos una actividad", true); return; }
   const id = state.editAreaId || slug(nombre);
@@ -1774,6 +1787,7 @@ function renderInicio(){
     const slots=state.asignaciones[r.id]?.slots||{};
     const faltantes=[];
     areasEsp().forEach(a=>a.actividades.forEach(ac=>{
+      if(ac.porBanda) return;
       const falta=ac.cupo-((slots[slotKey(a.id,ac.id)]||[]).length);
       if(falta>0) faltantes.push(ac.nombre+(falta>1?" ×"+falta:""));
     }));
@@ -1903,21 +1917,34 @@ function renderSheetAdo(r){
   }
   if(banda){
     const eq = equipoDe(r.id)||[];
-    html += `<div class="chips" style="margin-top:8px">`+eq.map((m,i)=>{
-      const s = m.servidorId ? servidor(m.servidorId) : null;
-      if(!s){
-        return editable
-          ? `<button class="chip-add" onclick="abrirPickerAdo(${i})">+ ${escapeHtml(m.rol||"Puesto")}</button>`
-          : `<span class="chip" style="opacity:.6">${escapeHtml(m.rol||"Puesto")}: vacante</span>`;
-      }
-      const conf = conflictoDe(s.id, r.id);
-      const nd = (s.noDisponible||[]).includes(r.fecha);
-      const warn = nd ? "no disponible" : (conf ? "también en "+nombreActividad(conf) : null);
-      const quitar = editable ? `<button onclick="quitarEquipo(${i})" title="Quitar" style="background:none;border:none;cursor:pointer;color:inherit;font-size:13px;padding:0 0 0 2px">✕</button>` : "";
-      return warn
-        ? `<span class="warn-chip">⚠ ${escapeHtml(s.nombre)}&nbsp;<span style="font-weight:400;font-size:11px">${escapeHtml(m.rol||"")} · ${escapeHtml(warn)}</span>${quitar}</span>`
-        : `<span class="chip">${escapeHtml(s.nombre)}${m.rol?`&nbsp;<span style="color:var(--ink-faint);font-weight:400;font-size:11px">${escapeHtml(m.rol)}</span>`:""}${quitar}</span>`;
-    }).join("")+`</div>`;
+    // Agrupar el equipo por puesto/rol, conservando el orden de la banda
+    const grupos=[]; const idxRol={};
+    eq.forEach((m,i)=>{
+      const rol=m.rol||"Puesto";
+      if(!(rol in idxRol)){ idxRol[rol]=grupos.length; grupos.push({rol, items:[]}); }
+      grupos[idxRol[rol]].items.push({...m, i});
+    });
+    grupos.forEach(g=>{
+      const cub=g.items.filter(x=>x.servidorId && servidor(x.servidorId)).length;
+      html += `<div class="act-row"><div class="act-name"><span>${escapeHtml(g.rol)}</span><span class="act-count">${cub}/${g.items.length}</span></div><div class="chips">`;
+      g.items.forEach(x=>{
+        const s = x.servidorId ? servidor(x.servidorId) : null;
+        if(!s){
+          html += editable
+            ? `<button class="chip-add" onclick="abrirPickerAdo(${x.i})">+ Asignar</button>`
+            : `<span class="chip" style="opacity:.6">vacante</span>`;
+          return;
+        }
+        const conf = conflictoDe(s.id, r.id);
+        const nd = (s.noDisponible||[]).includes(r.fecha);
+        const warn = nd ? "no disponible" : (conf ? "también en "+nombreActividad(conf) : null);
+        const quitar = editable ? `<button onclick="quitarEquipo(${x.i})" title="Quitar" style="background:none;border:none;cursor:pointer;color:inherit;font-size:13px;padding:0 0 0 2px">✕</button>` : "";
+        html += warn
+          ? `<span class="warn-chip">⚠ ${escapeHtml(s.nombre)}&nbsp;<span style="font-weight:400;font-size:11px">${escapeHtml(warn)}</span>${quitar}</span>`
+          : `<span class="chip">${escapeHtml(s.nombre)}${quitar}</span>`;
+      });
+      html += `</div></div>`;
+    });
   }
   html += `</div>`;
   const setlist = doc.setlist||[];
@@ -1966,6 +1993,7 @@ window.quitarEquipo = i=>{
 };
 window.abrirPickerAdo = i=>{
   if(!puedeEditarSetlist(state.sheetReunionId)){ toast("No tenés permiso sobre esta reunión", true); return; }
+  state.pickerAdoModo="reunion";
   state.pickerAdo=i;
   const eq=equipoDe(state.sheetReunionId)||[];
   $("adoPickerTitle").textContent="Cubrir: "+((eq[i]&&eq[i].rol)||"Puesto");
@@ -1976,6 +2004,7 @@ window.abrirPickerAdo = i=>{
 $("adoPickerSearch").oninput=()=>renderPickerAdo();
 $("adoPickerAll").onchange=()=>renderPickerAdo();
 function renderPickerAdo(){
+  if(state.pickerAdoModo==="banda"){ renderPickerBanda(); return; }
   const i=state.pickerAdo;
   const reunionId=state.sheetReunionId;
   const r=state.reuniones.find(x=>x.id===reunionId);
@@ -2104,18 +2133,66 @@ function renderAdo(){
 }
 
 /* ---------- Bandas: CRUD ---------- */
-function filaMiembro(m){
-  const opts='<option value="">— Elegir servidor —</option>'+state.servidores.map(s=>`<option value="${s.id}" ${m&&m.servidorId===s.id?"selected":""}>${escapeHtml(s.nombre)}</option>`).join("");
-  return `<div class="b-miembro" style="display:flex;gap:6px;margin-bottom:6px">
-    <select style="flex:1.2;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--paper);color:var(--ink)">${opts}</select>
-    <input type="text" list="rolesList" placeholder="Rol (Líder vocal, Batería…)" value="${escapeHtml(m?.rol||"")}" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper);color:var(--ink)">
-    <button class="btn btn-ghost btn-sm" type="button" onclick="this.parentElement.remove()">✕</button></div>`;
+function rolBase(r){ return String(r||"").replace(" (rota)","").trim(); }
+function actividadesBanda(){ const a=area("adoracion"); return a ? (a.actividades||[]).filter(ac=>ac.porBanda) : []; }
+function renderBandaEditor(){
+  const acts=actividadesBanda();
+  const asignados=new Set();
+  let html=acts.map(ac=>{
+    const enPuesto=state.editBandaMiembros.map((m,i)=>({m,i})).filter(x=>rolBase(x.m.rol)===rolBase(ac.nombre));
+    enPuesto.forEach(x=>asignados.add(x.i));
+    return `<div class="act-row"><div class="act-name"><span>${escapeHtml(ac.nombre)}</span></div><div class="chips">`+
+      enPuesto.map(x=>{
+        const s=servidor(x.m.servidorId);
+        return `<span class="chip">${escapeHtml(s?s.nombre:"?")}${x.m.rol!==ac.nombre?`&nbsp;<span style="color:var(--ink-faint);font-weight:400;font-size:11px">${escapeHtml(x.m.rol)}</span>`:""}<button type="button" title="Quitar" onclick="quitarMiembroBanda(${x.i})">✕</button></span>`;
+      }).join("")+
+      `<button type="button" class="chip-add" onclick="abrirPickerBanda('${escapeHtml(ac.nombre)}')">+ Asignar</button></div></div>`;
+  }).join("");
+  const otros=state.editBandaMiembros.map((m,i)=>({m,i})).filter(x=>!asignados.has(x.i));
+  if(otros.length){
+    html+=`<div class="act-row"><div class="act-name"><span>Otros roles</span></div><div class="chips">`+otros.map(x=>{
+      const s=servidor(x.m.servidorId);
+      return `<span class="chip">${escapeHtml(s?s.nombre:"?")}&nbsp;<span style="color:var(--ink-faint);font-weight:400;font-size:11px">${escapeHtml(x.m.rol||"")}</span><button type="button" title="Quitar" onclick="quitarMiembroBanda(${x.i})">✕</button></span>`;
+    }).join("")+`</div></div>`;
+  }
+  $("bMiembros").innerHTML = html || '<p class="section-note">Definí primero los puestos del área Adoración (con la marca "banda") en la pestaña Áreas.</p>';
 }
+window.quitarMiembroBanda=i=>{ state.editBandaMiembros.splice(i,1); renderBandaEditor(); };
+window.abrirPickerBanda=rol=>{
+  state.pickerAdoModo="banda";
+  state.pickerBandaRol=rol;
+  $("adoPickerTitle").textContent="Asignar: "+rol;
+  $("adoPickerSearch").value=""; $("adoPickerAll").checked=false;
+  renderPickerAdo();
+  $("adoPickerOverlay").classList.add("open");
+};
+function renderPickerBanda(){
+  const rol=state.pickerBandaRol;
+  const rolCat=rolCatalogo(rol);
+  const q=$("adoPickerSearch").value.toLowerCase();
+  const todos=$("adoPickerAll").checked;
+  const yaEnRol=new Set(state.editBandaMiembros.filter(m=>rolBase(m.rol)===rolBase(rol)).map(m=>m.servidorId));
+  const lista=state.servidores
+    .filter(s=> todos || (s.rolesAdoracion||[]).includes(rolCat))
+    .filter(s=> !q || s.nombre.toLowerCase().includes(q));
+  $("adoPickerList").innerHTML = lista.length ? lista.map(s=>{
+    const dup=yaEnRol.has(s.id);
+    return `<button class="picker-row" ${dup?"disabled":""} onclick="agregarMiembroBanda('${s.id}')">
+      <span class="pname">${escapeHtml(s.nombre)}</span>
+      <span class="pstate${dup?" conf":""}">${dup?"ya está en este puesto":escapeHtml((s.rolesAdoracion||[]).join(", ")||"sin roles")}</span></button>`;
+  }).join("") : `<div class="empty-state"><strong>Nadie con el rol "${escapeHtml(rolCat)}"</strong>Probá "Mostrar todos" o cargale el rol en su ficha de servidor.</div>`;
+}
+window.agregarMiembroBanda=sid=>{
+  state.editBandaMiembros.push({servidorId:sid, rol:state.pickerBandaRol});
+  $("adoPickerOverlay").classList.remove("open");
+  renderBandaEditor();
+};
 $("btnNuevaBanda").onclick=()=>{
   state.editBandaId=null;
+  state.editBandaMiembros=[];
   $("bandaModalTitle").textContent="Nueva banda";
   $("bNombre").value="";
-  $("bMiembros").innerHTML=filaMiembro(null)+filaMiembro(null);
+  renderBandaEditor();
   $("btnDelBanda").style.display="none";
   $("bandaOverlay").classList.add("open");
 };
@@ -2123,23 +2200,19 @@ window.editarBanda=id=>{
   const b=state.bandas.find(x=>x.id===id); if(!b) return;
   if(!puedeEditarBanda(id)){ toast("No tenés permiso sobre esta banda", true); return; }
   state.editBandaId=id;
+  state.editBandaMiembros=(b.miembros||[]).map(m=>({...m}));
   $("bandaModalTitle").textContent="Editar: "+b.nombre;
   $("bNombre").value=b.nombre;
-  $("bMiembros").innerHTML=(b.miembros||[]).map(filaMiembro).join("")||filaMiembro(null);
+  renderBandaEditor();
   $("btnDelBanda").style.display="";
   $("bandaOverlay").classList.add("open");
 };
-$("btnAddMiembro").onclick=()=>$("bMiembros").insertAdjacentHTML("beforeend", filaMiembro(null));
 $("btnSaveBanda").onclick=async ()=>{
   const nombre=$("bNombre").value.trim();
   if(!nombre){ toast("Poné un nombre a la banda", true); return; }
   if(state.editBandaId && !puedeEditarBanda(state.editBandaId)){ toast("No tenés permiso sobre esta banda", true); return; }
   if(!state.editBandaId && bandasPermitidas()){ toast("Tu acceso es solo a bandas específicas: no podés crear nuevas", true); return; }
-  const miembros=[...$("bMiembros").querySelectorAll(".b-miembro")].map(el=>{
-    const sel=el.querySelector("select"), inp=el.querySelector("input");
-    if(!sel.value) return null;
-    return {servidorId:sel.value, rol:inp.value.trim()};
-  }).filter(Boolean);
+  const miembros=(state.editBandaMiembros||[]).filter(m=>m.servidorId).map(m=>({servidorId:m.servidorId, rol:m.rol||""}));
   if(state.editBandaId){
     // Congelar el histórico: las reuniones pasadas de esta banda que todavía
     // derivaban su equipo de la plantilla quedan fijadas con la formación anterior.
