@@ -135,13 +135,26 @@ header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:14px
 .sheet-overlay{position:fixed;inset:0;background:rgba(23,35,59,.4);z-index:60;display:none}
 .sheet-overlay.open{display:block}
 .sheet{position:fixed;z-index:70;background:var(--card);display:none;flex-direction:column;
-  right:0;top:0;bottom:0;width:min(560px,100%);box-shadow:-8px 0 30px rgba(23,35,59,.15)}
+  inset:0;width:100%;box-shadow:none}
 .sheet.open{display:flex}
-.sheet-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.sheet-head h2{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.sheet-hero{display:flex;gap:14px;flex-wrap:wrap;padding:10px 22px;border-bottom:1px solid var(--line);align-items:center}
+.sheet-hero>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.hero-stat{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft)}
+.hero-stat strong{color:var(--ink);font-size:13px}
+.hero-stat.alerta strong{color:var(--danger)}
+.rtabs{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--line);overflow-x:auto}
+.rtabs>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:2px}
+.rtab{border:none;background:none;padding:11px 14px;font-weight:600;font-size:13px;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.rtab.on{color:var(--ink);border-bottom-color:var(--amber)}
+.prog-row{display:grid;grid-template-columns:70px 52px 1fr 130px 30px;gap:6px;align-items:center;margin-bottom:6px}
+.prog-row input{border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:var(--paper);color:var(--ink);font-size:13px;min-width:0}
+.prog-head{display:grid;grid-template-columns:70px 52px 1fr 130px 30px;gap:6px;font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.sheet-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;max-width:1060px;margin:0 auto;width:100%}
+.sheet-head h2{font-size:24px;font-weight:800;letter-spacing:-.01em}
 .sheet-head .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-top:4px}
 .close-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font-size:15px;flex-shrink:0}
 .sheet-body{flex:1;overflow-y:auto;padding:16px 22px 30px}
+.sheet-body>div.sheet-inner{max-width:1060px;margin:0 auto;width:100%}
 .area-block{margin-bottom:20px}
 .area-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .area-name{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
@@ -415,21 +428,33 @@ table.stats tr:last-child td{border-bottom:none}
 <div class="sheet-overlay" id="sheetOverlay"></div>
 <aside class="sheet" id="sheet" role="dialog" aria-modal="true">
   <div class="sheet-head">
-    <div>
-      <h2 id="sheetTitle"></h2>
-      <div class="sub" id="sheetSub"></div>
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <button class="close-x" id="sheetBack" aria-label="Volver" title="Volver a Planificación">←</button>
+      <div>
+        <h2 id="sheetTitle"></h2>
+        <div class="sub" id="sheetSub"></div>
+      </div>
     </div>
     <div style="display:flex;gap:6px">
       <button class="btn btn-danger btn-sm" data-admin="1" id="btnDelReunion">Eliminar</button>
       <button class="close-x" id="sheetClose" aria-label="Cerrar">✕</button>
     </div>
   </div>
-  <div style="padding:10px 22px;border-bottom:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-ghost btn-sm" id="btnVistaCompleta" style="display:none">Ver todo el día</button>
-    <button class="btn btn-ghost btn-sm" id="btnCopiar">⧉ Copiar equipo de…</button>
-    <button class="btn btn-amber btn-sm" id="btnWsp">Compartir por WhatsApp</button>
+  <div class="sheet-hero"><div id="sheetHero"></div></div>
+  <div style="padding:10px 22px;border-bottom:1px solid var(--line)">
+    <div style="max-width:1060px;margin:0 auto;width:100%;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" id="btnVistaCompleta" style="display:none">Ver todo el día</button>
+      <button class="btn btn-ghost btn-sm" id="btnCopiar">⧉ Copiar equipo de…</button>
+      <button class="btn btn-amber btn-sm" id="btnWsp">Compartir por WhatsApp</button>
+    </div>
   </div>
-  <div class="sheet-body" id="sheetBody"></div>
+  <div class="rtabs"><div id="rtabs">
+    <button class="rtab on" data-rtab="equipo" onclick="setSheetTab('equipo')">Equipo</button>
+    <button class="rtab" data-rtab="setlist" onclick="setSheetTab('setlist')" id="rtabSetlist">Setlist</button>
+    <button class="rtab" data-rtab="programa" onclick="setSheetTab('programa')">Programa</button>
+    <button class="rtab" data-rtab="notas" onclick="setSheetTab('notas')">Notas</button>
+  </div></div>
+  <div class="sheet-body"><div class="sheet-inner" id="sheetBody"></div></div>
 </aside>
 
 <!-- ===== Modal: elegir servidor ===== -->
@@ -914,7 +939,12 @@ function suscribirGlobal(){
 let unsubMes = [];
 function suscribirMes(){
   unsubMes.forEach(u=>u()); unsubMes=[];
-  state.reuniones=[]; state.asignaciones={}; state.adoracion={};
+  state.reuniones=[]; state.asignaciones={}; state.adoracion={}; state.programas={};
+  unsubMes.push(db.collection("programas").where("mes","==",state.mes).onSnapshot(s=>{
+    state.programas={};
+    s.docs.forEach(d=>state.programas[d.id]=d.data());
+    if(state.sheetReunionId) renderSheet();
+  }, e=>toast("Error al sincronizar programas: "+e.message, true)));
   unsubMes.push(db.collection("adoracion").where("mes","==",state.mes).onSnapshot(s=>{
     state.adoracion={};
     s.docs.forEach(d=>state.adoracion[d.id]=d.data());
@@ -1101,14 +1131,52 @@ window.abrirReunion = function(id){
 };
 function cerrarSheet(){ state.sheetReunionId=null; $("sheetOverlay").classList.remove("open"); $("sheet").classList.remove("open"); }
 $("sheetClose").onclick=cerrarSheet;
+$("sheetBack").onclick=cerrarSheet;
 $("sheetOverlay").onclick=cerrarSheet;
 
+window.setSheetTab=t=>{
+  state.sheetTab=t;
+  document.querySelectorAll(".rtab").forEach(b=>b.classList.toggle("on", b.dataset.rtab===t));
+  renderSheet();
+};
+function coberturaReunion(r){
+  // Cuenta cubiertos/total del día completo: áreas técnicas + banda + adicionales
+  const asig = state.asignaciones[r.id]?.slots || {};
+  let total=0, cub=0;
+  state.areas.forEach(a=>a.actividades.forEach(ac=>{
+    if(ac.porBanda) return;
+    total+=ac.cupo; cub+=Math.min((asig[slotKey(a.id,ac.id)]||[]).length, ac.cupo);
+  }));
+  const eq=equipoDe(r.id)||[];
+  total+=eq.length;
+  cub+=eq.filter(e=>e.servidorId && servidor(e.servidorId)).length;
+  return {cub, total};
+}
 function renderSheet(){
   const r = state.reuniones.find(x=>x.id===state.sheetReunionId);
   if(!r){ cerrarSheet(); return; }
   $("sheetTitle").textContent = r.titulo;
   $("sheetSub").textContent = fmtFecha(r.fecha)+" de "+MESES[fechaLocal(r.fecha).getMonth()]+" · "+r.hora+" hs";
   $("btnDelReunion").style.display = esAdmin() ? "" : "none";
+  // Hero: estado del día
+  const cob=coberturaReunion(r);
+  const doc=state.adoracion[r.id]||{};
+  const banda=doc.bandaId?state.bandas.find(b=>b.id===doc.bandaId):null;
+  const prog=(state.programas[r.id]?.items)||[];
+  $("sheetHero").innerHTML=`
+    <span class="hero-stat${cob.cub<cob.total?" alerta":""}"><strong>${cob.cub}/${cob.total}</strong> puestos cubiertos</span>
+    <span class="hero-stat"><strong>${banda?escapeHtml(banda.nombre):"Sin banda"}</strong></span>
+    <span class="hero-stat"><strong>${(doc.setlist||[]).length}</strong> canciones</span>
+    <span class="hero-stat"><strong>${prog.length}</strong> ítems de programa</span>`;
+  const t=state.sheetTab||"equipo";
+  // La pestaña Setlist aplica al espacio Adoración
+  $("rtabSetlist").style.display = (espaciosPermitidos().includes("adoracion")||sheetCompleto()) ? "" : "none";
+  if(t==="setlist") $("sheetBody").innerHTML=renderSheetSetlist(r);
+  else if(t==="programa") $("sheetBody").innerHTML=renderSheetPrograma(r);
+  else if(t==="notas"){ $("sheetBody").innerHTML=renderSheetNotas(r); }
+  else $("sheetBody").innerHTML=renderSheetEquipo(r);
+}
+function renderSheetEquipo(r){
   const asig = state.asignaciones[r.id]?.slots || {};
   let html = (state.espacio==="adoracion" || sheetCompleto()) ? renderSheetAdo(r) : "";
   (sheetCompleto() ? state.areas : areasEsp()).forEach(a=>{
@@ -1133,8 +1201,110 @@ function renderSheet(){
     });
     html += `</div>`;
   });
-  $("sheetBody").innerHTML=html;
+  return html;
 }
+/* ---------- Pestaña Programa: cronograma del servicio ---------- */
+function puedeEditarPrograma(){ return esAdmin() || esLider(); }
+function renderSheetPrograma(r){
+  const items=(state.programas[r.id]?.items)||[];
+  const editable=puedeEditarPrograma();
+  let html=`<div class="area-block"><div class="area-head"><span class="area-name">Programa del servicio</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+  if(!items.length && !editable){
+    return html+`<div class="empty-state"><strong>Sin programa cargado</strong>El cronograma de este servicio todavía no fue armado.</div></div>`;
+  }
+  if(items.length) html+=`<div class="prog-head"><span>Hora</span><span>Min</span><span>Ítem</span><span>Responsable</span><span></span></div>`;
+  items.forEach((it,i)=>{
+    html += editable
+      ? `<div class="prog-row">
+          <input value="${escapeHtml(it.hora||"")}" placeholder="10:00" onchange="progCampo(${i},'hora',this.value)">
+          <input value="${escapeHtml(it.dur||"")}" placeholder="5" title="Duración en minutos" onchange="progCampo(${i},'dur',this.value)">
+          <input value="${escapeHtml(it.titulo||"")}" placeholder="Bienvenida, Adoración, Prédica…" onchange="progCampo(${i},'titulo',this.value)">
+          <input value="${escapeHtml(it.resp||"")}" placeholder="Responsable" onchange="progCampo(${i},'resp',this.value)">
+          <div style="display:flex;gap:2px"><button class="mini" title="Subir" onclick="progMover(${i},-1)">↑</button><button class="mini" title="Quitar" onclick="progQuitar(${i})">✕</button></div>
+        </div>`
+      : `<div class="prog-row">
+          <span class="mono" style="font-size:12px">${escapeHtml(it.hora||"")}</span>
+          <span class="mono" style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.dur||"")}′</span>
+          <span style="font-size:13px;font-weight:600">${escapeHtml(it.titulo||"")}</span>
+          <span style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.resp||"")}</span><span></span>
+        </div>`;
+  });
+  if(editable) html+=`<div class="chips" style="margin-top:10px">
+    <button class="chip-add" onclick="progAgregar()">+ Ítem</button>
+    ${items.length?"":`<button class="chip-add" onclick="progPlantilla()">Usar plantilla de servicio</button>`}
+  </div>`;
+  const totMin=items.reduce((t,it)=>t+(parseInt(it.dur,10)||0),0);
+  if(items.length) html+=`<div class="section-note" style="margin-top:8px">${items.length} ítems · ${totMin} min en total</div>`;
+  return html+`</div>`;
+}
+async function guardarPrograma(reunionId, items){
+  const r=state.reuniones.find(x=>x.id===reunionId);
+  const doc={mes: r?r.mes:state.mes, reunionId, items};
+  state.programas[reunionId]=doc;
+  renderSheet();
+  try{ await db.collection("programas").doc(reunionId).set(doc); }
+  catch(e){ toast("No se pudo guardar el programa: "+e.message, true); }
+}
+function progItems(){ return ((state.programas[state.sheetReunionId]?.items)||[]).map(x=>({...x})); }
+window.progCampo=(i,campo,val)=>{ const it=progItems(); if(!it[i])return; it[i][campo]=val.trim(); guardarPrograma(state.sheetReunionId, it); };
+window.progAgregar=()=>{ const it=progItems(); const ult=it[it.length-1]; it.push({hora:"", dur:"", titulo:"", resp:""}); guardarPrograma(state.sheetReunionId, it); };
+window.progQuitar=i=>{ const it=progItems(); it.splice(i,1); guardarPrograma(state.sheetReunionId, it); };
+window.progMover=(i,d)=>{ const it=progItems(); const j=i+d; if(j<0||j>=it.length)return; [it[i],it[j]]=[it[j],it[i]]; guardarPrograma(state.sheetReunionId, it); };
+window.progPlantilla=()=>{
+  const r=state.reuniones.find(x=>x.id===state.sheetReunionId);
+  const h=(r?.hora||"10:00");
+  guardarPrograma(state.sheetReunionId, [
+    {hora:h, dur:"5", titulo:"Bienvenida", resp:""},
+    {hora:"", dur:"25", titulo:"Adoración", resp:""},
+    {hora:"", dur:"5", titulo:"Anuncios", resp:""},
+    {hora:"", dur:"5", titulo:"Ofrenda", resp:""},
+    {hora:"", dur:"35", titulo:"Prédica", resp:""},
+    {hora:"", dur:"10", titulo:"Ministración", resp:""},
+    {hora:"", dur:"5", titulo:"Cierre y despedida", resp:""}
+  ]);
+};
+/* ---------- Pestaña Notas de la reunión ---------- */
+function renderSheetNotas(r){
+  const notas=(state.notas||[]).filter(n=>n.reunionId===r.id);
+  let html=`<div class="area-block"><div class="area-head"><span class="area-name">Notas de esta reunión</span></div>
+    <div class="resp-input" style="margin-bottom:14px">
+      <input type="text" id="notaReunionTxt" placeholder="Dejar una nota para este servicio… (Enter para publicar)" onkeydown="if(event.key==='Enter')notaReunion()">
+      <button class="btn btn-ghost btn-sm" onclick="notaReunion()">Publicar</button>
+    </div>`;
+  if(!notas.length) return html+`<div class="empty-state"><strong>Sin notas para esta reunión</strong>Lo que publiques acá también aparece en la pestaña Notas general, etiquetado con la fecha.</div></div>`;
+  html+=notas.map(n=>{
+    const puedeBorrar = esAdmin() || n.autorUid===state.user.uid;
+    return `<div class="nota${n.resuelta?" res":""}">
+      <div class="nota-head">
+        <div><strong style="font-size:13px">${escapeHtml(n.autorNombre||"")}</strong> <span class="nota-meta">${fmtTs(n.creado)}</span></div>
+        <div style="display:flex;gap:6px">
+          ${n.resuelta
+            ? `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', false)">↺</button>`
+            : `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', true)">✓</button>`}
+          ${puedeBorrar?`<button class="btn btn-danger btn-sm" onclick="delNota('${n.id}')">✕</button>`:""}
+        </div>
+      </div>
+      <div class="nota-texto">${escapeHtml(n.texto)}</div>
+      ${(n.respuestas||[]).map(x=>`<div class="resp"><div><strong style="font-size:12px">${escapeHtml(x.autorNombre||"")}</strong> <span class="nota-meta">${fmtTs(x.creado)}</span></div><div class="nota-texto">${escapeHtml(x.texto)}</div></div>`).join("")}
+    </div>`;
+  }).join("");
+  return html+`</div>`;
+}
+window.notaReunion=async ()=>{
+  const inp=$("notaReunionTxt");
+  const texto=(inp.value||"").trim();
+  if(!texto) return;
+  inp.value="";
+  const r=state.reuniones.find(x=>x.id===state.sheetReunionId);
+  await db.collection("notas").add({
+    servidorId:null, reunionId:state.sheetReunionId,
+    reunionRef: r ? (r.titulo+" · "+fmtFecha(r.fecha)) : "",
+    texto, resuelta:false,
+    autorUid: state.user.uid, autorNombre: state.user.displayName||state.user.email,
+    creado: firebase.firestore.FieldValue.serverTimestamp(), respuestas: []
+  });
+  toast("Nota publicada");
+};
 
 $("btnDelReunion").onclick = async ()=>{
   const r = state.reuniones.find(x=>x.id===state.sheetReunionId);
