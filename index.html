@@ -2072,13 +2072,13 @@ window.delNota=async id=>{
   toast("Nota eliminada");
 };
 
-/* ---------- Adoración: banda y setlist en la reunión ---------- */
+/* ---------- Adoración: banda en la reunión (pestaña Equipo) ---------- */
 function renderSheetAdo(r){
   const doc = state.adoracion[r.id]||{};
   const editableBanda = puedeAsignarBanda();
   const editable = puedeEditarSetlist(r.id);
   const banda = doc.bandaId ? state.bandas.find(b=>b.id===doc.bandaId) : null;
-  let html = `<div class="area-block"><div class="area-head"><span class="area-name">Banda y setlist</span>${(editable||editableBanda)?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+  let html = `<div class="area-block"><div class="area-head"><span class="area-name">Banda</span>${editableBanda?"":'<span class="area-lock">solo lectura</span>'}</div>`;
   html += `<div class="act-row"><div class="act-name"><span>Banda asignada</span></div>`;
   if(editableBanda){
     html += `<select onchange="setBandaReunion(this.value)" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper);color:var(--ink);width:100%">
@@ -2118,9 +2118,20 @@ function renderSheetAdo(r){
       html += `</div></div>`;
     });
   }
-  html += `</div>`;
+  html += `</div></div>`;
+  return html;
+}
+
+/* ---------- Adoración: setlist en la reunión (pestaña Setlist) ---------- */
+function renderSheetSetlist(r){
+  const doc = state.adoracion[r.id]||{};
+  const editable = puedeEditarSetlist(r.id);
   const setlist = doc.setlist||[];
-  html += `<div class="act-row"><div class="act-name"><span>Setlist</span><span class="act-count">${setlist.length} canciones</span></div>`;
+  let html = `<div class="area-block"><div class="area-head"><span class="area-name">Setlist</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+  if(!setlist.length && !editable){
+    return html+`<div class="empty-state"><strong>Sin setlist cargado</strong>Todavía no se agregaron canciones a esta reunión.</div></div>`;
+  }
+  html += `<div class="act-row"><div class="act-name"><span></span><span class="act-count">${setlist.length} canciones</span></div>`;
   setlist.forEach((it,i)=>{
     const c = state.canciones.find(x=>x.id===it.cancionId);
     html += `<div class="set-row">
