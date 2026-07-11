@@ -1266,7 +1266,7 @@ function renderSheetEquipo(r){
   return html;
 }
 /* ---------- Pestaña Programa: cronograma del servicio ---------- */
-function puedeEditarPrograma(){ return esAdmin() || esLider(); }
+function puedeEditarPrograma(){ return puedeEditarArea("produccion"); }
 function renderSheetPrograma(r){
   const items=(state.programas[r.id]?.items)||[];
   const editable=puedeEditarPrograma();
@@ -1340,9 +1340,9 @@ function renderSheetNotas(r){
       <div class="nota-head">
         <div><strong style="font-size:13px">${escapeHtml(n.autorNombre||"")}</strong> <span class="nota-meta">${fmtTs(n.creado)}</span></div>
         <div style="display:flex;gap:6px">
-          ${n.resuelta
+          ${puedeBorrar ? (n.resuelta
             ? `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', false)">↺</button>`
-            : `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', true)">✓</button>`}
+            : `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', true)">✓</button>`) : ""}
           ${puedeBorrar?`<button class="btn btn-danger btn-sm" onclick="delNota('${n.id}')">✕</button>`:""}
         </div>
       </div>
@@ -2111,9 +2111,9 @@ function renderNotas(){
       <div class="nota-head">
         <div><span class="tag">${s?escapeHtml(s.nombre):"General"}</span> <strong style="font-size:13px">${escapeHtml(n.autorNombre||"")}</strong> <span class="nota-meta">${fmtTs(n.creado)}</span></div>
         <div style="display:flex;gap:6px">
-          ${n.resuelta
+          ${puedeBorrar ? (n.resuelta
             ? `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', false)">↺ Reabrir</button>`
-            : `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', true)">✓ Resolver</button>`}
+            : `<button class="btn btn-ghost btn-sm" onclick="resolverNota('${n.id}', true)">✓ Resolver</button>`) : ""}
           ${puedeBorrar?`<button class="btn btn-danger btn-sm" title="Eliminar nota" onclick="delNota('${n.id}')">✕</button>`:""}
         </div>
       </div>
