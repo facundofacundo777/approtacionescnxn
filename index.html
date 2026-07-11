@@ -155,11 +155,12 @@ header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:10px
 .sheet{position:fixed;z-index:70;background:var(--card);display:none;flex-direction:column;
   inset:0;width:100%;box-shadow:none}
 .sheet.open{display:flex}
-.sheet-hero{display:flex;gap:14px;flex-wrap:wrap;padding:10px 22px;border-bottom:1px solid var(--line);align-items:center}
-.sheet-hero>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-.hero-stat{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft)}
-.hero-stat strong{color:var(--ink);font-size:13px}
-.hero-stat.alerta strong{color:var(--danger)}
+.sheet-hero{display:flex;gap:10px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);align-items:stretch}
+.sheet-hero>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.hero-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 16px;min-width:120px;flex:1}
+.hero-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:20px;color:var(--ink)}
+.hero-label{font-size:11px;color:var(--ink-soft);margin-top:2px}
+.hero-card.alerta .hero-num{color:var(--danger)}
 .rtabs{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--line);overflow-x:auto}
 .rtabs>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:2px}
 .rtab{border:none;background:none;padding:11px 14px;font-weight:600;font-size:13px;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
@@ -196,6 +197,26 @@ header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:10px
 .chip button{background:none;border:none;color:var(--ink-faint);font-size:13px;line-height:1;padding:0 0 0 2px}
 .chip button:hover{color:var(--danger)}
 .chip-add{border:1.5px dashed var(--ink-faint);background:none;border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink-soft)}
+/* ---------- Dashboard de reunión: tarjetas por rol con avatares ---------- */
+.role-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.role-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.role-card-head .area-name{font-size:15px;font-weight:800}
+.role-group{padding:12px 0;border-top:1px solid var(--line)}
+.role-group:first-of-type{padding-top:0;border-top:none}
+.role-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.role-group-head .rg-name{font-size:13px;font-weight:600;color:var(--ink-soft)}
+.role-group-head .rg-count{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--card-2);color:var(--ink-soft)}
+.role-group-head .rg-count.full{background:var(--ok-soft);color:var(--ok)}
+.role-members{display:flex;flex-wrap:wrap;gap:14px}
+.member{display:flex;flex-direction:column;align-items:center;gap:6px;width:64px;text-align:center}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;position:relative}
+.avatar.warn{background:var(--danger-soft);color:var(--danger)}
+.member-name{font-size:11px;line-height:1.25;color:var(--ink-soft);word-break:break-word}
+.member-x{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--card);border:1px solid var(--line);font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint)}
+.member-add{display:flex;flex-direction:column;align-items:center;gap:6px;width:64px;background:none;border:none}
+.avatar-add{width:44px;height:44px;border-radius:50%;border:1.5px dashed var(--ink-faint);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink-faint);flex-shrink:0}
+.member-add .member-name{color:var(--ink-faint)}
+.member-add:hover .avatar-add{border-color:var(--accent);color:var(--accent)}
 .chip-add:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
 
 /* ---------- Modales ---------- */
@@ -801,6 +822,10 @@ function actividad(areaId, actId){ const a=area(areaId); return a && a.actividad
 function nombreActividad(key){ const [ar,ac]=key.split("."); const a=area(ar), x=actividad(ar,ac);
   return (a?a.nombre:ar)+": "+(x?x.nombre:ac); }
 function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function iniciales(nombre){
+  const p=(nombre||"?").trim().split(/\s+/);
+  return ((p[0]?.[0]||"")+(p[1]?.[0]||"")).toUpperCase() || "?";
+}
 function slug(s){ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,""); }
 
 /* ---------- Arranque ---------- */
@@ -1195,10 +1220,10 @@ function renderSheet(){
   const banda=doc.bandaId?state.bandas.find(b=>b.id===doc.bandaId):null;
   const prog=(state.programas[r.id]?.items)||[];
   $("sheetHero").innerHTML=`
-    <span class="hero-stat${cob.cub<cob.total?" alerta":""}"><strong>${cob.cub}/${cob.total}</strong> puestos cubiertos</span>
-    <span class="hero-stat"><strong>${banda?escapeHtml(banda.nombre):"Sin banda"}</strong></span>
-    <span class="hero-stat"><strong>${(doc.setlist||[]).length}</strong> canciones</span>
-    <span class="hero-stat"><strong>${prog.length}</strong> ítems de programa</span>`;
+    <div class="hero-card${cob.cub<cob.total?" alerta":""}"><div class="hero-num">${cob.cub}/${cob.total}</div><div class="hero-label">Puestos cubiertos</div></div>
+    <div class="hero-card"><div class="hero-num" style="font-size:15px">${banda?escapeHtml(banda.nombre):"Sin banda"}</div><div class="hero-label">Banda</div></div>
+    <div class="hero-card"><div class="hero-num">${(doc.setlist||[]).length}</div><div class="hero-label">Canciones</div></div>
+    <div class="hero-card"><div class="hero-num">${prog.length}</div><div class="hero-label">Ítems de programa</div></div>`;
   const t=state.sheetTab||"equipo";
   // La pestaña Setlist aplica al espacio Adoración
   $("rtabSetlist").style.display = (espaciosPermitidos().includes("adoracion")||sheetCompleto()) ? "" : "none";
@@ -1212,21 +1237,27 @@ function renderSheetEquipo(r){
   let html = (state.espacio==="adoracion" || sheetCompleto()) ? renderSheetAdo(r) : "";
   (sheetCompleto() ? state.areas : areasEsp()).forEach(a=>{
     const editable = puedeEditarArea(a.id);
-    html += `<div class="area-block"><div class="area-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
-    a.actividades.forEach(ac=>{
-      if(ac.porBanda) return;
+    const actividades = a.actividades.filter(ac=>!ac.porBanda);
+    if(!actividades.length) return;
+    html += `<div class="role-card"><div class="role-card-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+    actividades.forEach(ac=>{
       const key=slotKey(a.id,ac.id);
       const ids = asig[key]||[];
-      html += `<div class="act-row"><div class="act-name"><span>${escapeHtml(ac.nombre)}</span><span class="act-count">${ids.length}/${ac.cupo}</span></div><div class="chips">`;
+      const full = ids.length>=ac.cupo;
+      html += `<div class="role-group"><div class="role-group-head"><span class="rg-name">${escapeHtml(ac.nombre)}</span><span class="rg-count${full?" full":""}">${ids.length}/${ac.cupo}</span></div><div class="role-members">`;
       ids.forEach(sid=>{
         const s=servidor(sid);
-        html += `<span class="chip">${escapeHtml(s?s.nombre:"(eliminado)")}${editable?`<button title="Quitar" onclick="quitarAsignacion('${key}','${sid}')">✕</button>`:""}</span>`;
+        const nombre = s?s.nombre:"(eliminado)";
+        html += `<div class="member">
+          <div class="avatar">${iniciales(nombre)}${editable?`<button class="member-x" title="Quitar" onclick="quitarAsignacion('${key}','${sid}')">✕</button>`:""}</div>
+          <span class="member-name">${escapeHtml(nombre.split(" ")[0])}</span>
+        </div>`;
       });
       if(editable){
         for(let i=ids.length;i<ac.cupo;i++)
-          html += `<button class="chip-add" onclick="abrirPicker('${a.id}','${ac.id}')">+ Asignar</button>`;
+          html += `<button class="member-add" onclick="abrirPicker('${a.id}','${ac.id}')"><span class="avatar-add">+</span><span class="member-name">Asignar</span></button>`;
         if(ids.length>=ac.cupo)
-          html += `<button class="chip-add" onclick="abrirPicker('${a.id}','${ac.id}')" title="Agregar por encima del cupo">+</button>`;
+          html += `<button class="member-add" onclick="abrirPicker('${a.id}','${ac.id}')" title="Agregar por encima del cupo"><span class="avatar-add">+</span><span class="member-name">Extra</span></button>`;
       }
       html += `</div></div>`;
     });
@@ -2129,8 +2160,8 @@ function renderSheetAdo(r){
   const editableBanda = puedeAsignarBanda();
   const editable = puedeEditarSetlist(r.id);
   const banda = doc.bandaId ? state.bandas.find(b=>b.id===doc.bandaId) : null;
-  let html = `<div class="area-block"><div class="area-head"><span class="area-name">Banda</span>${editableBanda?"":'<span class="area-lock">solo lectura</span>'}</div>`;
-  html += `<div class="act-row"><div class="act-name"><span>Banda asignada</span></div>`;
+  let html = `<div class="role-card"><div class="role-card-head"><span class="area-name">Banda</span>${editableBanda?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+  html += `<div style="margin-bottom:${banda?"14px":"0"}">`;
   if(editableBanda){
     html += `<select onchange="setBandaReunion(this.value)" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--paper);color:var(--ink);width:100%">
       <option value="">— Sin banda —</option>`+
@@ -2138,6 +2169,7 @@ function renderSheetAdo(r){
   }else{
     html += `<div class="chips"><span class="chip">${banda?escapeHtml(banda.nombre):"Sin banda"}</span></div>`;
   }
+  html += `</div>`;
   if(banda){
     const eq = equipoDe(r.id)||[];
     // Agrupar el equipo por puesto/rol, conservando el orden de la banda
@@ -2149,27 +2181,29 @@ function renderSheetAdo(r){
     });
     grupos.forEach(g=>{
       const cub=g.items.filter(x=>x.servidorId && servidor(x.servidorId)).length;
-      html += `<div class="act-row"><div class="act-name"><span>${escapeHtml(g.rol)}</span><span class="act-count">${cub}/${g.items.length}</span></div><div class="chips">`;
+      const full = cub>=g.items.length;
+      html += `<div class="role-group"><div class="role-group-head"><span class="rg-name">${escapeHtml(g.rol)}</span><span class="rg-count${full?" full":""}">${cub}/${g.items.length}</span></div><div class="role-members">`;
       g.items.forEach(x=>{
         const s = x.servidorId ? servidor(x.servidorId) : null;
         if(!s){
           html += editable
-            ? `<button class="chip-add" onclick="abrirPickerAdo(${x.i})">+ Asignar</button>`
-            : `<span class="chip" style="opacity:.6">vacante</span>`;
+            ? `<button class="member-add" onclick="abrirPickerAdo(${x.i})"><span class="avatar-add">+</span><span class="member-name">Asignar</span></button>`
+            : `<div class="member"><span class="avatar-add">–</span><span class="member-name">Vacante</span></div>`;
           return;
         }
         const conf = conflictoDe(s.id, r.id);
         const nd = (s.noDisponible||[]).includes(r.fecha);
         const warn = nd ? "no disponible" : (conf ? "también en "+nombreActividad(conf) : null);
-        const quitar = editable ? `<button onclick="quitarEquipo(${x.i})" title="Quitar" style="background:none;border:none;cursor:pointer;color:inherit;font-size:13px;padding:0 0 0 2px">✕</button>` : "";
-        html += warn
-          ? `<span class="warn-chip">⚠ ${escapeHtml(s.nombre)}&nbsp;<span style="font-weight:400;font-size:11px">${escapeHtml(warn)}</span>${quitar}</span>`
-          : `<span class="chip">${escapeHtml(s.nombre)}${quitar}</span>`;
+        const quitar = editable ? `<button class="member-x" title="Quitar" onclick="quitarEquipo(${x.i})">✕</button>` : "";
+        html += `<div class="member" title="${escapeHtml(warn||"")}">
+          <div class="avatar${warn?" warn":""}">${iniciales(s.nombre)}${quitar}</div>
+          <span class="member-name">${escapeHtml(s.nombre.split(" ")[0])}${warn?" ⚠":""}</span>
+        </div>`;
       });
       html += `</div></div>`;
     });
   }
-  html += `</div></div>`;
+  html += `</div>`;
   return html;
 }
 
