@@ -816,6 +816,7 @@ function conManejo(fn, msg){
 }
 function esAdmin(){ return state.rol==="admin"; }
 function puedeEditarArea(areaId){ return esAdmin() || (state.rol==="lider" && state.misAreas.includes(areaId)); }
+function puedeEditarServidores(){ return esAdmin() || (state.rol==="lider" && !!(state.userDoc && state.userDoc.puedeEditarServidores)); }
 function slotKey(areaId, actId){ return areaId+"."+actId; }
 function fechaLocal(str){ const [y,m,d]=str.split("-").map(Number); return new Date(y,m-1,d); }
 const DIAS=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
@@ -1280,6 +1281,22 @@ function renderSheetEquipo(r){
 }
 /* ---------- Pestaña Programa: cronograma del servicio ---------- */
 function puedeEditarPrograma(){ return puedeEditarArea("produccion"); }
+function sumarMin(hora, min){
+  const m=/^(\d{1,2}):(\d{2})$/.exec(hora||"");
+  if(!m) return "";
+  let total=(+m[1])*60+(+m[2])+(parseInt(min,10)||0);
+  total=((total%1440)+1440)%1440;
+  return String(Math.floor(total/60)).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
+}
+function horasCalculadas(items, horaBase){
+  const out=[]; let prev=horaBase||"";
+  items.forEach((it,i)=>{
+    const h = /^\d{1,2}:\d{2}$/.test(it.hora||"") ? it.hora : (i===0 ? (horaBase||"") : prev);
+    out.push(h);
+    prev = sumarMin(h, it.dur);
+  });
+  return out;
+}
 function renderSheetPrograma(r){
   const items=(state.programas[r.id]?.items)||[];
   const editable=puedeEditarPrograma();
@@ -1287,18 +1304,20 @@ function renderSheetPrograma(r){
   if(!items.length && !editable){
     return html+`<div class="empty-state"><strong>Sin programa cargado</strong>El cronograma de este servicio todavía no fue armado.</div></div>`;
   }
+  const horas=horasCalculadas(items, r.hora);
   if(items.length) html+=`<div class="prog-head"><span>Hora</span><span>Min</span><span>Ítem</span><span>Responsable</span><span></span></div>`;
   items.forEach((it,i)=>{
+    const auto = !it.hora;
     html += editable
       ? `<div class="prog-row">
-          <input value="${escapeHtml(it.hora||"")}" placeholder="10:00" onchange="progCampo(${i},'hora',this.value)">
+          <input value="${escapeHtml(horas[i])}" placeholder="10:00" title="${auto?"Calculada automáticamente. Escribí una hora para fijarla.":"Hora fijada manualmente"}" style="${auto?"color:var(--ink-soft)":""}" onchange="progCampo(${i},'hora',this.value)">
           <input value="${escapeHtml(it.dur||"")}" placeholder="5" title="Duración en minutos" onchange="progCampo(${i},'dur',this.value)">
           <input value="${escapeHtml(it.titulo||"")}" placeholder="Bienvenida, Adoración, Prédica…" onchange="progCampo(${i},'titulo',this.value)">
           <input value="${escapeHtml(it.resp||"")}" placeholder="Responsable" onchange="progCampo(${i},'resp',this.value)">
           <div style="display:flex;gap:2px"><button class="mini" title="Subir" onclick="progMover(${i},-1)">↑</button><button class="mini" title="Quitar" onclick="progQuitar(${i})">✕</button></div>
         </div>`
       : `<div class="prog-row">
-          <span class="mono" style="font-size:12px">${escapeHtml(it.hora||"")}</span>
+          <span class="mono" style="font-size:12px">${escapeHtml(horas[i])}</span>
           <span class="mono" style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.dur||"")}′</span>
           <span style="font-size:13px;font-weight:600">${escapeHtml(it.titulo||"")}</span>
           <span style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.resp||"")}</span><span></span>
@@ -1670,6 +1689,9 @@ function servidorEnEspacio(s){
 }
 $("servSearch").oninput=renderServidores;
 function renderServidores(){
+  const editable=puedeEditarServidores();
+  $("btnNuevoServ").style.display = editable ? "" : "none";
+  $("btnImport").style.display = editable ? "" : "none";
   const q=$("servSearch").value.toLowerCase();
   const lista = state.servidores.filter(servidorEnEspacio).filter(s=>{
     if(!q) return true;
@@ -1677,7 +1699,7 @@ function renderServidores(){
     return s.nombre.toLowerCase().includes(q)||acts.includes(q);
   });
   if(!lista.length){
-    $("servList").innerHTML=`<div class="row-item"><div class="row-main"><div class="row-title">Sin resultados</div><div class="row-sub">Agregá servidores con "+ Servidor" o importá un CSV.</div></div></div>`;
+    $("servList").innerHTML=`<div class="row-item"><div class="row-main"><div class="row-title">Sin resultados</div><div class="row-sub">${editable?'Agregá servidores con "+ Servidor" o importá un CSV.':'Todavía no hay servidores cargados.'}</div></div></div>`;
     return;
   }
   $("servList").innerHTML=lista.map(s=>`
@@ -1686,7 +1708,7 @@ function renderServidores(){
         <div class="row-title">${escapeHtml(s.nombre)}</div>
         <div class="row-sub">${(s.actividades||[]).map(k=>`<span class="tag">${escapeHtml(nombreActividad(k))}</span>`).join("")}${(s.rolesAdoracion||[]).map(r=>`<span class="tag">♪ ${escapeHtml(r)}</span>`).join("")||((s.actividades||[]).length?"":"Sin actividades asignadas")}</div>
       </div>
-      <div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarServidor('${s.id}')">Editar</button></div>
+      <div class="row-actions">${editable?`<button class="btn btn-ghost btn-sm" onclick="editarServidor('${s.id}')">Editar</button>`:""}</div>
     </div>`).join("");
 }
 
@@ -1954,6 +1976,7 @@ function renderUsuarios(){
         <div style="margin-top:6px">${fijo?'<span class="tag">Admin fijo (configurado en el archivo)</span>':areasChecks}</div>
         <div style="margin-top:6px"><span class="nota-meta">ESPACIOS: </span>${fijo?'<span class="tag">Técnica y Adoración</span>':espChecks}</div>
         <div style="margin-top:6px"><span class="nota-meta">BANDAS QUE PUEDE EDITAR (vacío = todas): </span>${fijo?'<span class="tag">Todas</span>':(bandChecks||'<span class="tag">Aún no hay bandas</span>')}</div>
+        <div style="margin-top:6px"><label class="check-item" style="display:inline-flex"><input type="checkbox" ${u.puedeEditarServidores?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioEditorServidores('${u.id}',this)"><span>Puede editar el listado de servidores</span></label></div>
       </div>
       <div class="row-actions">
         <select ${fijo?"disabled":""} onchange="setUsuarioRol('${u.id}',this.value)" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper)">
@@ -1978,6 +2001,10 @@ window.setUsuarioBanda=conManejo(async (id,input)=>{
   await db.collection("usuarios").doc(id).update({bandas:[...bs]});
   toast("Bandas actualizadas");
 }, "No se pudo actualizar las bandas");
+window.setUsuarioEditorServidores=conManejo(async (id,input)=>{
+  await db.collection("usuarios").doc(id).update({puedeEditarServidores: input.checked});
+  toast("Permiso actualizado");
+}, "No se pudo actualizar el permiso");
 window.delUsuario=conManejo(async id=>{
   const u=state.usuarios.find(x=>x.id===id);
   if(!confirm("¿Eliminar el acceso de "+(u?.nombre||u?.email||"este usuario")+"? Si vuelve a ingresar con Google, queda como pendiente hasta que lo apruebes de nuevo.")) return;
