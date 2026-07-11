@@ -62,7 +62,7 @@ body{
   padding-bottom:env(safe-area-inset-bottom);
 }
 .mono{font-family:'IBM Plex Mono',monospace}
-button{font-family:inherit;cursor:pointer}
+button{font-family:inherit;cursor:pointer;color:inherit}
 input,select,textarea{font-family:inherit;font-size:15px}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -92,16 +92,30 @@ input,select,textarea{font-family:inherit;font-size:15px}
 
 /* ---------- Estructura de la app ---------- */
 #app{display:none;max-width:1180px;margin:0 auto;padding:0 16px 90px}
-header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:14px 0 0;}
-.top-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.user-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft)}
-.user-chip .rol{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--card);border:1px solid var(--line);padding:2px 8px;border-radius:99px;color:var(--ink)}
+header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:10px 0 0;}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.brand-mark{display:inline-flex;align-items:center;gap:8px;margin-bottom:0;flex-shrink:0}
+.brand-name{display:none}
+.user-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);min-width:0}
+#userName{display:none}
+.user-chip .rol{font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--card);border:1px solid var(--line);padding:2px 7px;border-radius:99px;color:var(--ink);white-space:nowrap}
+.icon-btn{width:32px;height:32px;padding:0;border-radius:10px;background:transparent;border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+@media(min-width:640px){
+  .brand-name{display:inline}
+  #userName{display:inline;white-space:nowrap}
+  .user-chip{font-size:13px}
+}
 .tabs{display:flex;gap:4px;margin-top:14px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{background:none;border:none;padding:10px 14px;font-size:14px;font-weight:600;color:var(--ink-faint);border-bottom:2px solid transparent;white-space:nowrap}
 .tab.active{color:var(--ink);border-bottom-color:var(--accent)}
 .view{display:none;padding-top:20px}
 .view.active{display:block}
+
+/* ---------- Encabezado de página ---------- */
+.page-head{margin-bottom:18px}
+.page-head h1{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.page-head .sub{font-size:12px;color:var(--ink-soft);margin-top:4px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em}
 
 /* ---------- Barra de mes ---------- */
 .month-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
@@ -302,6 +316,7 @@ table.stats tr:last-child td{border-bottom:none}
     <h1>Planificación de equipos de servicio</h1>
     <p>Organizá las reuniones del mes, asigná servidores por área y evitá superposiciones.</p>
     <button class="btn btn-primary btn-block" id="btnLogin">Ingresar con Google</button>
+    <p class="hint" style="margin-top:14px">¿Llegaste desde un link de WhatsApp o Instagram? Tocá los <strong>••• (tres puntos)</strong> arriba y elegí <strong>"Abrir en Chrome"</strong> o <strong>"Abrir en Safari"</strong> antes de ingresar — si no, el login puede fallar.</p>
   </div>
 </div>
 
@@ -334,9 +349,9 @@ table.stats tr:last-child td{border-bottom:none}
         <span id="userName"></span>
         <span class="rol" id="userRol"></span>
         <span class="rol" id="espacioBadge" style="display:none;background:var(--accent-soft);color:var(--accent-ink);border-color:transparent"></span>
-        <button class="btn btn-ghost btn-sm" id="btnEspacio" style="display:none">Cambiar</button>
-        <button class="btn btn-ghost btn-sm" id="btnTheme" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
-        <button class="btn btn-ghost btn-sm" id="btnLogout">Salir</button>
+        <button class="icon-btn" id="btnEspacio" style="display:none" title="Cambiar espacio" aria-label="Cambiar espacio">⇄</button>
+        <button class="icon-btn" id="btnTheme" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
+        <button class="icon-btn" id="btnLogout" title="Salir" aria-label="Salir">⏻</button>
       </div>
     </div>
     <nav class="tabs" id="tabs">
@@ -353,9 +368,10 @@ table.stats tr:last-child td{border-bottom:none}
 
   <!-- Vista: Inicio -->
   <section class="view active" id="view-inicio">
+    <div class="page-head"><h1>Inicio</h1><div class="sub" id="inicioFecha"></div></div>
     <div class="stat-grid" id="inicioStats"></div>
     <div class="week-label">Próximas reuniones</div>
-    <div class="list-card" id="inicioProximas"></div>
+    <div class="meet-grid" id="inicioProximas"></div>
   </section>
 
   <!-- Vista: Planificación -->
@@ -1960,6 +1976,8 @@ function renderStats(){
 function renderInicio(){
   const hoy=new Date();
   const hoyStr=hoy.getFullYear()+"-"+String(hoy.getMonth()+1).padStart(2,"0")+"-"+String(hoy.getDate()).padStart(2,"0");
+  const fEl=$("inicioFecha");
+  if(fEl) fEl.textContent = DIAS[hoy.getDay()]+" "+hoy.getDate()+" de "+MESES[hoy.getMonth()];
   const proximas=state.reuniones.filter(r=>r.fecha>=hoyStr);
   let vacantes=0;
   proximas.forEach(r=>vacantes+=Math.max(0, cupoTotal(r.id)-cubiertos(r.id)));
@@ -1968,27 +1986,45 @@ function renderInicio(){
     <div class="stat-card"><div class="stat-num${vacantes?" alert":""}">${vacantes}</div><div class="stat-label">Puestos sin cubrir</div></div>
     <div class="stat-card"><div class="stat-num">${state.servidores.length}</div><div class="stat-label">Servidores cargados</div></div>
     <div class="stat-card"><div class="stat-num${(state.notas||[]).some(n=>!n.resuelta)?" alert":""}">${(state.notas||[]).filter(n=>!n.resuelta).length}</div><div class="stat-label">Notas pendientes</div></div>`;
-  $("inicioProximas").innerHTML = proximas.length ? proximas.slice(0,6).map(r=>{
-    const n=cubiertos(r.id);
-    const totalR=cupoTotal(r.id);
-    const slots=state.asignaciones[r.id]?.slots||{};
-    const faltantes=[];
-    areasEsp().forEach(a=>a.actividades.forEach(ac=>{
-      if(ac.porBanda) return;
-      const falta=ac.cupo-((slots[slotKey(a.id,ac.id)]||[]).length);
-      if(falta>0) faltantes.push(ac.nombre+(falta>1?" ×"+falta:""));
-    }));
-    const adoI=state.adoracion[r.id];
-    const bandaI = adoI&&adoI.bandaId ? state.bandas.find(b=>b.id===adoI.bandaId) : null;
-    const lineaBanda = state.espacio==="adoracion" ? ` · ♪ ${bandaI?escapeHtml(bandaI.nombre):'<span class="falta">sin banda</span>'}` : "";
-    return `<div class="row-item" style="cursor:pointer" onclick="abrirReunion('${r.id}')">
-      <div class="row-main">
-        <div class="row-title">${escapeHtml(r.titulo)} · <span class="mono" style="font-weight:500;font-size:13px">${fmtFecha(r.fecha)} ${r.hora}</span></div>
-        <div class="row-sub">${faltantes.length?`<span class="falta">Faltan: ${escapeHtml(faltantes.join(", "))}</span>`:"Equipo completo ✓"}${lineaBanda}</div>
+  const cont=$("inicioProximas");
+  if(!proximas.length){
+    cont.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><strong>No hay próximas reuniones</strong>${esAdmin()?'Generá las reuniones del mes desde Planificación.':'Todavía no se generaron las reuniones de este mes.'}</div>`;
+    return;
+  }
+  cont.innerHTML = proximas.slice(0,6).map(r=>{
+    const total=cupoTotal(r.id), n=cubiertos(r.id);
+    const pct = total? n/total : 0;
+    let cls = pct>=1?"full": pct>0?"partial":"empty";
+    let txt = pct>=1?"Completa": pct>0?(total-n)+" puestos libres":"Sin asignar";
+    if(state.espacio==="adoracion"){
+      const bC=bandaDe(r.id);
+      if(!bC){ cls="empty"; txt="Sin banda"; }
+      else{
+        const eq=equipoDe(r.id)||[];
+        const cubB=eq.filter(e=>e.servidorId && servidor(e.servidorId)).length;
+        const adics=n-cubB;
+        const cupoAd=total-eq.length;
+        txt=(cubB<eq.length ? "Banda "+cubB+"/"+eq.length : "Banda ✓")+" · "+adics+"/"+cupoAd+" adicionales";
+        cls = cubB<eq.length ? "empty" : (adics>=cupoAd ? "full" : "partial");
+      }
+    }
+    let segs=""; for(let i=0;i<total;i++) segs+=`<span class="cov-seg${i<n?" on":""}"></span>`;
+    const badge = r.titulo==="ADN Jóvenes" ? '<span class="badge badge-adn">ADN</span>'
+      : r.especial ? '<span class="badge badge-esp">Especial</span>' : "";
+    const ado=state.adoracion[r.id];
+    const bandaCard = ado&&ado.bandaId ? state.bandas.find(b=>b.id===ado.bandaId) : null;
+    return `<button class="meet-card" onclick="abrirReunion('${r.id}')">
+      <div class="meet-head">
+        <div><div class="meet-time">${r.hora}</div><div class="meet-date">${fmtFecha(r.fecha)}</div></div>
+        <div class="meet-title">${escapeHtml(r.titulo)}${badge}</div>
       </div>
-      <span class="mono" style="font-size:12px;color:var(--ink-soft);flex-shrink:0">${n}/${totalR}</span>
-    </div>`;
-  }).join("") : `<div class="row-item"><div class="row-main"><div class="row-title">No hay reuniones por delante en ${escapeHtml(mesLabel(state.mes))}</div><div class="row-sub">Cambiá de mes en Planificación o generá las reuniones del mes.</div></div></div>`;
+      <div class="coverage">
+        <div class="cov-track">${segs}</div>
+        <div class="cov-meta"><span>${n}/${total}</span><span class="cov-state ${cls}">${txt}</span></div>
+        ${(state.espacio==="adoracion"&&(bandaCard||ado?.setlist?.length))?`<div class="cov-meta"><span>♪ ${bandaCard?escapeHtml(bandaCard.nombre):"Sin banda"}</span><span>${ado?.setlist?.length||0} canciones</span></div>`:""}
+      </div>
+    </button>`;
+  }).join("");
 }
 
 /* ---------- Notas del equipo ---------- */
