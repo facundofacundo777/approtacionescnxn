@@ -90,27 +90,62 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .setup-steps{margin:16px 0 0;padding-left:20px;color:var(--ink-soft);font-size:14px}
 .setup-steps li{margin-bottom:8px}
 
-/* ---------- Estructura de la app ---------- */
-#app{display:none;max-width:1180px;margin:0 auto;padding:0 16px 90px}
-header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:10px 0 0;}
-.top-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* ---------- Estructura de la app (shell) ---------- */
+#app{display:none}
+#app.on{display:block}
 .brand-mark{display:inline-flex;align-items:center;gap:8px;margin-bottom:0;flex-shrink:0}
-.brand-name{display:none}
+.brand-name{display:inline;font-weight:800;letter-spacing:.14em;font-size:13px;text-transform:uppercase}
+.icon-btn{width:34px;height:34px;padding:0;border-radius:10px;background:transparent;border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn:hover{background:var(--card-2)}
 .user-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);min-width:0}
-#userName{display:none}
 .user-chip .rol{font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--card);border:1px solid var(--line);padding:2px 7px;border-radius:99px;color:var(--ink);white-space:nowrap}
-.icon-btn{width:32px;height:32px;padding:0;border-radius:10px;background:transparent;border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-@media(min-width:640px){
-  .brand-name{display:inline}
-  #userName{display:inline;white-space:nowrap}
-  .user-chip{font-size:13px}
-}
-.tabs{display:flex;gap:4px;margin-top:14px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{background:none;border:none;padding:10px 14px;font-size:14px;font-weight:600;color:var(--ink-faint);border-bottom:2px solid transparent;white-space:nowrap}
-.tab.active{color:var(--ink);border-bottom-color:var(--accent)}
-.view{display:none;padding-top:20px}
+#userName{display:none}
+@media(min-width:640px){ #userName{display:inline;white-space:nowrap} .user-chip{font-size:13px} }
+
+/* Contenido */
+.content-wrap{max-width:1120px;margin:0 auto;padding:20px 20px 48px}
+.view{display:none}
 .view.active{display:block}
+
+/* Topbar (ambos) */
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--paper);border-bottom:1px solid var(--line)}
+.topbar-right{display:flex;align-items:center;gap:6px}
+
+/* Sidebar (desktop) */
+.sidebar{display:none}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:22px 22px 14px}
+.sidebar-nav{display:flex;flex-direction:column;gap:1px;padding:6px 12px}
+.nav-sec{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-faint);padding:14px 12px 5px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border:none;background:none;border-radius:11px;font-size:14px;font-weight:600;color:var(--ink-soft);cursor:pointer;text-align:left;width:100%;white-space:nowrap;font-family:inherit}
+.nav-item:hover{background:var(--card-2);color:var(--ink)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent-ink)}
+.nav-item svg{width:20px;height:20px;flex-shrink:0}
+
+/* Bottom nav (mobile) */
+.bottom-nav{display:none}
+.more-overlay{display:none}
+.more-sheet{display:none}
+
+@media(min-width:900px){
+  #app.on{display:grid;grid-template-columns:250px 1fr;align-items:start}
+  .sidebar{display:flex;flex-direction:column;position:sticky;top:0;height:100vh;border-right:1px solid var(--line);background:var(--card);overflow-y:auto}
+  .topbar .brand-mark{display:none}
+  .content-wrap{padding-top:26px}
+}
+@media(max-width:899px){
+  .sidebar{display:none!important}
+  .content-wrap{padding-bottom:96px}
+  .bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--card);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bottom-nav .nav-item{flex:1;flex-direction:column;gap:3px;padding:6px 2px;font-size:10px;border-radius:10px;align-items:center;text-align:center;color:var(--ink-faint)}
+  .bottom-nav .nav-item.active{color:var(--accent)}
+  .bottom-nav .nav-item svg{width:23px;height:23px}
+  .more-overlay.open{display:block;position:fixed;inset:0;background:rgba(23,35,59,.4);z-index:45}
+  .more-sheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:46;background:var(--card);border-radius:22px 22px 0 0;padding:8px 12px calc(16px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .22s ease;max-height:72vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.15)}
+  .more-overlay.open .more-sheet{transform:translateY(0)}
+  .more-grip{width:38px;height:4px;border-radius:99px;background:var(--line);margin:8px auto 12px}
+  .more-sheet .nav-item{font-size:15px;padding:13px 14px;border-radius:12px}
+  .more-sheet .nav-item svg{width:22px;height:22px}
+}
 
 /* ---------- Encabezado de página ---------- */
 .page-head{margin-bottom:18px}
@@ -385,30 +420,50 @@ table.stats tr:last-child td{border-bottom:none}
 
 <!-- ===== App ===== -->
 <div id="app">
-  <header class="top">
-    <div class="top-row">
-      <div class="brand-mark" style="margin-bottom:0"><span class="brand-dot"></span><span class="brand-name">Servidores</span></div>
-      <div class="user-chip">
-        <span id="userName"></span>
-        <span class="rol" id="userRol"></span>
+  <!-- Sprite de íconos -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <g id="ic-inicio" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></g>
+    <g id="ic-plan" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></g>
+    <g id="ic-servidores" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.4a3 3 0 0 1 0 5.2M17.5 20a5.5 5.5 0 0 0-2-4.3"/></g>
+    <g id="ic-canciones" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v11"/><circle cx="6.2" cy="17" r="2.8"/><circle cx="17.2" cy="14" r="2.8"/></g>
+    <g id="ic-notas" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v10H9l-4 4v-4H4z"/></g>
+    <g id="ic-stats" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M6 20v-7M12 20V5M18 20v-9"/></g>
+    <g id="ic-bandas" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/></g>
+    <g id="ic-areas" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></g>
+    <g id="ic-usuarios" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M15.5 13.8l2 2 3.5-3.6"/></g>
+    <g id="ic-mas" fill="currentColor"><circle cx="6" cy="6" r="1.7"/><circle cx="12" cy="6" r="1.7"/><circle cx="18" cy="6" r="1.7"/><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/><circle cx="6" cy="18" r="1.7"/><circle cx="12" cy="18" r="1.7"/><circle cx="18" cy="18" r="1.7"/></g>
+  </defs></svg>
+
+  <!-- Sidebar (desktop) -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-dot"></span><span class="brand-name">Servidores</span></div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="inicio"><svg viewBox="0 0 24 24"><use href="#ic-inicio"/></svg>Inicio</button>
+      <button class="nav-item" data-view="plan"><svg viewBox="0 0 24 24"><use href="#ic-plan"/></svg>Planificación</button>
+      <button class="nav-item" data-view="servidores"><svg viewBox="0 0 24 24"><use href="#ic-servidores"/></svg>Servidores</button>
+      <button class="nav-item" data-view="canciones" data-esp="adoracion"><svg viewBox="0 0 24 24"><use href="#ic-canciones"/></svg>Canciones</button>
+      <button class="nav-item" data-view="notas"><svg viewBox="0 0 24 24"><use href="#ic-notas"/></svg>Notas</button>
+      <button class="nav-item" data-view="stats"><svg viewBox="0 0 24 24"><use href="#ic-stats"/></svg>Carga del mes</button>
+      <div class="nav-sec" data-admin="1">Administración</div>
+      <button class="nav-item" data-view="bandas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-bandas"/></svg>Rotaciones de Bandas</button>
+      <button class="nav-item" data-view="areas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-areas"/></svg>Áreas</button>
+      <button class="nav-item" data-view="usuarios" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-usuarios"/></svg>Usuarios</button>
+    </nav>
+  </aside>
+
+  <!-- Contenido -->
+  <div class="shell-main">
+    <header class="topbar">
+      <div class="brand-mark"><span class="brand-dot"></span><span class="brand-name">Servidores</span></div>
+      <div class="topbar-right">
+        <span class="user-chip"><span id="userName"></span><span class="rol" id="userRol"></span></span>
         <span class="rol" id="espacioBadge" style="display:none;background:var(--accent-soft);color:var(--accent-ink);border-color:transparent"></span>
         <button class="icon-btn" id="btnEspacio" style="display:none" title="Cambiar espacio" aria-label="Cambiar espacio">⇄</button>
         <button class="icon-btn" id="btnTheme" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
         <button class="icon-btn" id="btnLogout" title="Salir" aria-label="Salir">⏻</button>
       </div>
-    </div>
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-view="inicio">Inicio</button>
-      <button class="tab" data-view="plan">Planificación</button>
-      <button class="tab" data-view="servidores">Servidores</button>
-      <button class="tab" data-view="canciones" data-esp="adoracion">Canciones</button>
-      <button class="tab" data-view="notas">Notas</button>
-      <button class="tab" data-view="stats">Carga del mes</button>
-      <button class="tab" data-view="bandas" data-admin="1">Rotaciones de Bandas</button>
-      <button class="tab" data-view="areas" data-admin="1">Áreas</button>
-      <button class="tab" data-view="usuarios" data-admin="1">Usuarios</button>
-    </nav>
-  </header>
+    </header>
+    <div class="content-wrap">
 
   <!-- Vista: Inicio -->
   <section class="view active" id="view-inicio">
@@ -501,6 +556,27 @@ table.stats tr:last-child td{border-bottom:none}
     <p class="section-note">Las personas que ingresan con Google aparecen acá. Asignales un rol: los administradores manejan todo; los líderes solo asignan servidores dentro de sus áreas.</p>
     <div class="list-card" id="usersList"></div>
   </section>
+  </div><!-- /content-wrap -->
+  </div><!-- /shell-main -->
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-view="inicio"><svg viewBox="0 0 24 24"><use href="#ic-inicio"/></svg>Inicio</button>
+    <button class="nav-item" data-view="plan"><svg viewBox="0 0 24 24"><use href="#ic-plan"/></svg>Planificación</button>
+    <button class="nav-item" data-view="notas"><svg viewBox="0 0 24 24"><use href="#ic-notas"/></svg>Notas</button>
+    <button class="nav-item" data-view="stats"><svg viewBox="0 0 24 24"><use href="#ic-stats"/></svg>Carga</button>
+    <button class="nav-item nav-more" id="btnMas"><svg viewBox="0 0 24 24"><use href="#ic-mas"/></svg>Más</button>
+  </nav>
+  <div class="more-overlay" id="moreOverlay">
+    <div class="more-sheet">
+      <div class="more-grip"></div>
+      <button class="nav-item" data-view="servidores"><svg viewBox="0 0 24 24"><use href="#ic-servidores"/></svg>Servidores</button>
+      <button class="nav-item" data-view="canciones" data-esp="adoracion"><svg viewBox="0 0 24 24"><use href="#ic-canciones"/></svg>Canciones</button>
+      <button class="nav-item" data-view="bandas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-bandas"/></svg>Rotaciones de Bandas</button>
+      <button class="nav-item" data-view="areas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-areas"/></svg>Áreas</button>
+      <button class="nav-item" data-view="usuarios" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-usuarios"/></svg>Usuarios</button>
+    </div>
+  </div>
 </div>
 
 <!-- ===== Panel de reunión ===== -->
@@ -898,7 +974,7 @@ if(!configOk){
 
 function mostrar(idPantalla){
   ["setupScreen","loginScreen","pendingScreen"].forEach(id=>$(id).style.display = id===idPantalla ? "flex":"none");
-  $("app").style.display = "none";
+  $("app").classList.remove("on");
 }
 
 const ESPACIOS_INFO={
@@ -939,13 +1015,13 @@ function puedeEditarSetlist(reunionId){
 function mostrarEleccionEspacio(){
   const esp=espaciosPermitidos();
   $("espacioBotones").innerHTML=esp.map(e=>`<button class="esp-btn" onclick="setEspacio('${e}')"><strong>${ESPACIOS_INFO[e].nombre}</strong><span>${ESPACIOS_INFO[e].desc}</span></button>`).join("");
-  $("app").style.display="none";
+  $("app").classList.remove("on");
   $("espacioScreen").style.display="flex";
 }
 window.setEspacio=function(e){
   state.espacio=e;
   $("espacioScreen").style.display="none";
-  $("app").style.display="block";
+  $("app").classList.add("on");
   $("espacioBadge").textContent=ESPACIOS_INFO[e].nombre;
   $("espacioBadge").style.display="";
   $("btnEspacio").style.display = espaciosPermitidos().length>1 ? "" : "none";
@@ -1087,11 +1163,21 @@ $("btnLogout").onclick = ()=>{ state.unsubs.forEach(u=>u()); unsubMes.forEach(u=
 $("btnLogoutPending").onclick = ()=>auth.signOut().then(()=>location.reload());
 
 /* ---------- Tabs ---------- */
-$("tabs").addEventListener("click", e=>{
-  const b = e.target.closest(".tab"); if(!b) return;
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t===b));
-  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+b.dataset.view));
+function cerrarMas(){ $("moreOverlay").classList.remove("open"); }
+const CORE_VIEWS=["inicio","plan","notas","stats"];
+function irAVista(view){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+view));
+  document.querySelectorAll(".nav-item[data-view]").forEach(n=>n.classList.toggle("active", n.dataset.view===view));
+  const mas=$("btnMas"); if(mas) mas.classList.toggle("active", !CORE_VIEWS.includes(view));
+  cerrarMas();
+  window.scrollTo(0,0);
+}
+document.addEventListener("click", e=>{
+  const n = e.target.closest(".nav-item[data-view]"); if(!n) return;
+  irAVista(n.dataset.view);
 });
+$("btnMas").onclick = ()=> $("moreOverlay").classList.toggle("open");
+$("moreOverlay").onclick = e=>{ if(e.target===$("moreOverlay")) cerrarMas(); };
 
 /* ---------- Mes ---------- */
 function cambiarMes(delta){
@@ -2733,7 +2819,7 @@ $("btnImpCancConfirm").onclick=async ()=>{
 /* ---------- Cierre de modales genérico ---------- */
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove("open"));
 document.querySelectorAll(".modal-overlay").forEach(o=>o.addEventListener("click", e=>{ if(e.target===o) o.classList.remove("open"); }));
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ document.querySelectorAll(".modal-overlay.open").forEach(o=>o.classList.remove("open")); cerrarSheet(); }});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ document.querySelectorAll(".modal-overlay.open").forEach(o=>o.classList.remove("open")); cerrarMas(); cerrarSheet(); }});
 </script>
 </body>
 </html>
