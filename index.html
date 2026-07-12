@@ -155,30 +155,48 @@ header.top{position:sticky;top:0;z-index:40;background:var(--paper);padding:10px
 .sheet{position:fixed;z-index:70;background:var(--card);display:none;flex-direction:column;
   inset:0;width:100%;box-shadow:none}
 .sheet.open{display:flex}
-.sheet-hero{display:flex;gap:10px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);align-items:stretch}
+@media(min-width:900px){
+  .sheet{inset:0 0 0 auto;width:min(920px,92vw);box-shadow:-14px 0 40px rgba(23,35,59,.18)}
+  [data-theme="dark"] .sheet{box-shadow:-14px 0 40px rgba(0,0,0,.5)}
+}
+.sheet-hero{display:flex;gap:10px;flex-wrap:wrap;padding:16px 22px 8px;align-items:stretch}
 .sheet-hero>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
-.hero-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 16px;min-width:120px;flex:1}
-.hero-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:20px;color:var(--ink)}
+.hero-card{background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:12px 16px;min-width:120px;flex:1}
+.hero-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:22px;color:var(--ink)}
 .hero-label{font-size:11px;color:var(--ink-soft);margin-top:2px}
 .hero-card.alerta .hero-num{color:var(--danger)}
+.hero-meta{padding:0 22px 14px}
+.hero-meta>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink-soft)}
+.hero-meta .dot{color:var(--ink-faint)}
+.hero-meta:empty{display:none}
+.action-bar{padding:10px 22px;border-bottom:1px solid var(--line)}
+.action-bar>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:8px;flex-wrap:wrap}
 .rtabs{display:flex;gap:2px;padding:0 22px;border-bottom:1px solid var(--line);overflow-x:auto}
 .rtabs>div{max-width:1060px;margin:0 auto;width:100%;display:flex;gap:2px}
 .rtab{border:none;background:none;padding:11px 14px;font-weight:600;font-size:13px;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
 .rtab.on{color:var(--ink);border-bottom-color:var(--accent)}
-.prog-row{display:grid;grid-template-columns:70px 52px 1fr 130px 30px;gap:6px;align-items:center;margin-bottom:6px}
-.prog-row input{border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:var(--paper);color:var(--ink);font-size:13px;min-width:0}
-.prog-head{display:grid;grid-template-columns:70px 52px 1fr 130px 30px;gap:6px;font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-@media(max-width:640px){
-  .prog-head{display:none}
-  .prog-row{grid-template-columns:1fr 1fr;grid-template-areas:"hora dur" "titulo titulo" "resp resp" "acciones acciones";gap:6px;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
-  .prog-row input:nth-child(1){grid-area:hora}
-  .prog-row input:nth-child(2){grid-area:dur}
-  .prog-row input:nth-child(3){grid-area:titulo}
-  .prog-row input:nth-child(4){grid-area:resp}
-  .prog-row div{grid-area:acciones;justify-self:end}
-  .prog-row span.mono{grid-area:hora}
-  .prog-row span:not(.mono):not(:first-child){grid-area:titulo}
-}
+/* ---------- Programa: timeline ---------- */
+.timeline-item{display:flex;gap:10px;position:relative;padding-bottom:14px}
+.timeline-item:last-child{padding-bottom:0}
+.timeline-time{flex-shrink:0;width:56px;text-align:right;padding-top:11px}
+.timeline-time .t{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;color:var(--ink);border:none;background:transparent;width:100%;text-align:right;padding:0}
+.timeline-time .t.auto{color:var(--ink-faint);font-weight:600}
+.timeline-time .d{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);margin-top:3px}
+.timeline-rail{flex-shrink:0;width:12px;display:flex;justify-content:center;position:relative}
+.timeline-rail::before{content:"";position:absolute;top:17px;bottom:-14px;width:2px;background:var(--line)}
+.timeline-item:last-child .timeline-rail::before{display:none}
+.timeline-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);margin-top:13px;flex-shrink:0}
+.timeline-content{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;min-width:0}
+.timeline-content .tit{border:none;background:transparent;padding:2px 0;color:var(--ink);font-size:14px;font-weight:700;width:100%}
+.timeline-content .tit:focus{outline:none}
+.timeline-content .tit::placeholder{font-weight:600;color:var(--ink-faint)}
+.timeline-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px}
+.timeline-resp{border:none;background:transparent;padding:0;color:var(--ink-soft);font-size:12px;flex:1;min-width:0}
+.timeline-resp::placeholder{color:var(--ink-faint)}
+.timeline-dur{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.timeline-dur input{width:42px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:center}
+.timeline-dur span{font-size:11px;color:var(--ink-faint)}
+.timeline-actions{display:flex;gap:2px;flex-shrink:0}
 .sheet-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;max-width:1060px;margin:0 auto;width:100%}
 .sheet-head h2{font-size:24px;font-weight:800;letter-spacing:-.01em}
 .sheet-head .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-top:4px}
@@ -298,10 +316,14 @@ table.stats tr:last-child td{border-bottom:none}
 .res-meta{font-size:12px;color:var(--ok);margin-top:8px;font-weight:600}
 
 /* ---------- Adoración / setlist ---------- */
-.set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.setlist-card{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.setlist-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-faint);width:18px;flex-shrink:0;padding-top:2px}
+.setlist-main{flex:1;min-width:0}
+.setlist-title{font-weight:700;font-size:14px}
+.setlist-artist{font-size:12px;font-weight:400;color:var(--ink-soft)}
+.setlist-fields{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.setlist-actions{display:flex;gap:4px;flex-shrink:0;align-items:flex-start}
 .set-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-faint);width:18px}
-.set-tit{font-weight:700;font-size:14px;flex:1;min-width:140px}
-.set-art{font-size:12px;font-weight:400;color:var(--ink-soft)}
 .set-in{width:82px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12px}
 .set-in.canta{width:130px;font-family:'Inter',sans-serif}
 .mini{width:28px;height:28px;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:13px;color:var(--ink);padding:0;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
@@ -379,9 +401,10 @@ table.stats tr:last-child td{border-bottom:none}
       <button class="tab active" data-view="inicio">Inicio</button>
       <button class="tab" data-view="plan">Planificación</button>
       <button class="tab" data-view="servidores">Servidores</button>
-      <button class="tab" data-view="adoracion">Adoración</button>
+      <button class="tab" data-view="canciones" data-esp="adoracion">Canciones</button>
       <button class="tab" data-view="notas">Notas</button>
       <button class="tab" data-view="stats">Carga del mes</button>
+      <button class="tab" data-view="bandas" data-admin="1">Rotaciones de Bandas</button>
       <button class="tab" data-view="areas" data-admin="1">Áreas</button>
       <button class="tab" data-view="usuarios" data-admin="1">Usuarios</button>
     </nav>
@@ -431,22 +454,26 @@ table.stats tr:last-child td{border-bottom:none}
   </section>
 
   <!-- Vista: Adoración -->
-  <section class="view" id="view-adoracion">
+  <section class="view" id="view-bandas">
+    <p class="section-note">Definí las bandas y sus rotaciones: cada integrante con su rol. Los integrantes tienen que estar cargados como servidores. Estas bandas después se asignan a cada reunión desde el panel del servicio.</p>
     <div class="toolbar">
-      <div class="seg" style="margin-left:0">
-        <button class="btn btn-ghost btn-sm on" id="segBandas" onclick="setAdoTab('bandas')">Bandas</button>
-        <button class="btn btn-ghost btn-sm" id="segCanc" onclick="setAdoTab('canciones')">Canciones</button>
-      </div>
       <span style="flex:1"></span>
-      <span id="adoBtnB"><button class="btn btn-primary btn-sm" id="btnNuevaBanda">+ Banda</button></span>
-      <span id="adoBtnC" style="display:none">
-        <button class="btn btn-ghost btn-sm" id="btnPlantillaCanc">Plantilla CSV</button>
-        <button class="btn btn-ghost btn-sm" id="btnImportCanc">Importar</button>
-        <button class="btn btn-ghost btn-sm" id="btnExportCanc">Exportar</button>
-        <button class="btn btn-primary btn-sm" id="btnNuevaCanc">+ Canción</button>
-      </span>
+      <button class="btn btn-primary btn-sm" id="btnNuevaBanda">+ Banda</button>
     </div>
-    <div id="adoBody"></div>
+    <div id="bandasBody"></div>
+  </section>
+
+  <!-- Vista: Canciones -->
+  <section class="view" id="view-canciones">
+    <p class="section-note">Biblioteca de canciones del equipo de adoración. Desde acá se arman los setlists de cada reunión.</p>
+    <div class="toolbar">
+      <span style="flex:1"></span>
+      <button class="btn btn-ghost btn-sm" id="btnPlantillaCanc">Plantilla CSV</button>
+      <button class="btn btn-ghost btn-sm" id="btnImportCanc">Importar</button>
+      <button class="btn btn-ghost btn-sm" id="btnExportCanc">Exportar</button>
+      <button class="btn btn-primary btn-sm" id="btnNuevaCanc">+ Canción</button>
+    </div>
+    <div id="cancionesBody"></div>
   </section>
 
   <!-- Vista: Notas -->
@@ -493,13 +520,12 @@ table.stats tr:last-child td{border-bottom:none}
     </div>
   </div>
   <div class="sheet-hero"><div id="sheetHero"></div></div>
-  <div style="padding:10px 22px;border-bottom:1px solid var(--line)">
-    <div style="max-width:1060px;margin:0 auto;width:100%;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-sm" id="btnVistaCompleta" style="display:none">Ver todo el día</button>
-      <button class="btn btn-ghost btn-sm" id="btnCopiar">⧉ Copiar equipo de…</button>
-      <button class="btn btn-accent btn-sm" id="btnWsp">Compartir por WhatsApp</button>
-    </div>
-  </div>
+  <div class="hero-meta"><div id="sheetHeroMeta"></div></div>
+  <div class="action-bar"><div>
+    <button class="btn btn-ghost btn-sm" id="btnVistaCompleta" style="display:none">Ver todo el día</button>
+    <button class="btn btn-ghost btn-sm" id="btnCopiar">⧉ Copiar equipo de…</button>
+    <button class="btn btn-accent btn-sm" id="btnWsp">Compartir por WhatsApp</button>
+  </div></div>
   <div class="rtabs"><div id="rtabs">
     <button class="rtab on" data-rtab="equipo" onclick="setSheetTab('equipo')">Equipo</button>
     <button class="rtab" data-rtab="setlist" onclick="setSheetTab('setlist')" id="rtabSetlist">Setlist</button>
@@ -923,13 +949,6 @@ window.setEspacio=function(e){
   $("espacioBadge").textContent=ESPACIOS_INFO[e].nombre;
   $("espacioBadge").style.display="";
   $("btnEspacio").style.display = espaciosPermitidos().length>1 ? "" : "none";
-  const tabAdo=document.querySelector('.tab[data-view="adoracion"]');
-  if(tabAdo) tabAdo.style.display = e==="adoracion" ? "" : "none";
-  const activa=document.querySelector(".tab.active");
-  if(activa && activa.dataset.view==="adoracion" && e!=="adoracion"){
-    document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view==="inicio"));
-    document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id==="view-inicio"));
-  }
   renderTodo();
 };
 $("btnEspacio").onclick=mostrarEleccionEspacio;
@@ -939,6 +958,7 @@ async function entrar(){
   $("userName").textContent = state.user.displayName || state.user.email;
   $("userRol").textContent = esAdmin() ? "admin" : "líder";
   document.querySelectorAll("[data-admin]").forEach(el=>{ el.style.display = esAdmin() ? "" : "none"; });
+  document.querySelectorAll('[data-esp="adoracion"]').forEach(el=>{ el.style.display = espaciosPermitidos().includes("adoracion") ? "" : "none"; });
   if(esAdmin()){
     try{ await seedAreas(); }
     catch(e){ toast("No se pudieron preparar las áreas por defecto: "+e.message, true); }
@@ -946,9 +966,8 @@ async function entrar(){
   suscribirGlobal();
   suscribirMes();
   renderMesLabel();
-  const esp=espaciosPermitidos();
-  if(esp.length===1) setEspacio(esp[0]);
-  else mostrarEleccionEspacio();
+  // Sin pantalla-gate: entrás directo a tu espacio por defecto; el ⇄ permite cambiar.
+  setEspacio(espaciosPermitidos()[0]);
 }
 
 const CATALOGO_ADO=["Líder musical","Líder de voces","Director musical","Batería","Bajo","Teclado","Guitarra eléctrica 1","Guitarra eléctrica 2","Guitarra acústica","Vientos","Saxo","Percusión","Voz — Dir A","Voz — Dir 1","Voz — Dir 2","Voz — Dir 3","Voz — Dir 4","Voz — Dir B"];
@@ -988,11 +1007,11 @@ function suscribirGlobal(){
   }));
   state.unsubs.push(db.collection("bandas").orderBy("nombre").onSnapshot(s=>{
     state.bandas = s.docs.map(d=>({id:d.id, ...d.data()}));
-    renderAdo(); renderPlan(); if(state.sheetReunionId) renderSheet();
+    renderBandas(); renderPlan(); if(state.sheetReunionId) renderSheet();
   }, e=>toast("Error al sincronizar bandas: "+e.message, true)));
   state.unsubs.push(db.collection("canciones").orderBy("nombre").onSnapshot(s=>{
     state.canciones = s.docs.map(d=>({id:d.id, ...d.data()}));
-    renderAdo(); if(state.sheetReunionId) renderSheet();
+    renderCanciones(); if(state.sheetReunionId) renderSheet();
   }, e=>toast("Error al sincronizar canciones: "+e.message, true)));
   state.unsubs.push(db.collection("notas").orderBy("creado","desc").limit(100).onSnapshot(s=>{
     state.notas = s.docs.map(d=>({id:d.id, ...d.data()}));
@@ -1039,7 +1058,7 @@ function suscribirMes(){
   }, e=>toast("Error al sincronizar asignaciones: "+e.message, true)));
 }
 
-function renderTodo(){ renderPlan(); renderServidores(); renderAreas(); renderStats(); renderAdo(); if(state.notas) renderNotas(); if(state.sheetReunionId) renderSheet(); }
+function renderTodo(){ renderPlan(); renderServidores(); renderAreas(); renderStats(); renderBandas(); renderCanciones(); if(state.notas) renderNotas(); if(state.sheetReunionId) renderSheet(); }
 
 /* ---------- Login / logout ---------- */
 $("btnLogin").onclick = async ()=>{
@@ -1210,17 +1229,25 @@ window.setSheetTab=t=>{
   renderSheet();
 };
 function coberturaReunion(r){
-  // Cuenta cubiertos/total del día completo: áreas técnicas + banda + adicionales
+  // Cuenta cubiertos/total del día completo: áreas técnicas + banda + adicionales,
+  // más un resumen por área para las tarjetas del hero.
   const asig = state.asignaciones[r.id]?.slots || {};
-  let total=0, cub=0;
-  state.areas.forEach(a=>a.actividades.forEach(ac=>{
-    if(ac.porBanda) return;
-    total+=ac.cupo; cub+=Math.min((asig[slotKey(a.id,ac.id)]||[]).length, ac.cupo);
-  }));
+  let total=0, cub=0, areasCompletas=0, areasConCupos=0;
+  state.areas.forEach(a=>{
+    const acts=a.actividades.filter(ac=>!ac.porBanda);
+    if(!acts.length) return;
+    let areaTotal=0, areaCub=0;
+    acts.forEach(ac=>{ areaTotal+=ac.cupo; areaCub+=Math.min((asig[slotKey(a.id,ac.id)]||[]).length, ac.cupo); });
+    total+=areaTotal; cub+=areaCub;
+    areasConCupos++;
+    if(areaCub>=areaTotal) areasCompletas++;
+  });
   const eq=equipoDe(r.id)||[];
   total+=eq.length;
   cub+=eq.filter(e=>e.servidorId && servidor(e.servidorId)).length;
-  return {cub, total};
+  const notasReunion=(state.notas||[]).filter(n=>n.reunionId===r.id);
+  const notasAbiertas=notasReunion.filter(n=>!n.resuelta).length;
+  return {cub, total, faltan:Math.max(0,total-cub), areasCompletas, areasConCupos, notasAbiertas};
 }
 function renderSheet(){
   const r = state.reuniones.find(x=>x.id===state.sheetReunionId);
@@ -1234,10 +1261,12 @@ function renderSheet(){
   const banda=doc.bandaId?state.bandas.find(b=>b.id===doc.bandaId):null;
   const prog=(state.programas[r.id]?.items)||[];
   $("sheetHero").innerHTML=`
-    <div class="hero-card${cob.cub<cob.total?" alerta":""}"><div class="hero-num">${cob.cub}/${cob.total}</div><div class="hero-label">Puestos cubiertos</div></div>
-    <div class="hero-card"><div class="hero-num" style="font-size:15px">${banda?escapeHtml(banda.nombre):"Sin banda"}</div><div class="hero-label">Banda</div></div>
-    <div class="hero-card"><div class="hero-num">${(doc.setlist||[]).length}</div><div class="hero-label">Canciones</div></div>
-    <div class="hero-card"><div class="hero-num">${prog.length}</div><div class="hero-label">Ítems de programa</div></div>`;
+    <div class="hero-card${cob.faltan?" alerta":""}"><div class="hero-num">${cob.cub}/${cob.total}</div><div class="hero-label">Cobertura</div></div>
+    <div class="hero-card${cob.faltan?" alerta":""}"><div class="hero-num">${cob.faltan}</div><div class="hero-label">Faltan cubrir</div></div>
+    <div class="hero-card"><div class="hero-num">${cob.areasCompletas}/${cob.areasConCupos}</div><div class="hero-label">Áreas completas</div></div>
+    <div class="hero-card${cob.notasAbiertas?" alerta":""}"><div class="hero-num">${cob.notasAbiertas}</div><div class="hero-label">Notas pendientes</div></div>`;
+  const metaBits=[banda?"♪ "+escapeHtml(banda.nombre):null, (doc.setlist||[]).length?(doc.setlist.length+" canciones"):null, prog.length?(prog.length+" ítems de programa"):null].filter(Boolean);
+  $("sheetHeroMeta").innerHTML = metaBits.map((b,i)=>(i?'<span class="dot">·</span>':'')+'<span>'+b+'</span>').join("");
   const t=state.sheetTab||"equipo";
   // La pestaña Setlist aplica al espacio Adoración
   $("rtabSetlist").style.display = (espaciosPermitidos().includes("adoracion")||sheetCompleto()) ? "" : "none";
@@ -1305,24 +1334,36 @@ function renderSheetPrograma(r){
     return html+`<div class="empty-state"><strong>Sin programa cargado</strong>El cronograma de este servicio todavía no fue armado.</div></div>`;
   }
   const horas=horasCalculadas(items, r.hora);
-  if(items.length) html+=`<div class="prog-head"><span>Hora</span><span>Min</span><span>Ítem</span><span>Responsable</span><span></span></div>`;
+  html += `<div class="timeline">`;
   items.forEach((it,i)=>{
     const auto = !it.hora;
-    html += editable
-      ? `<div class="prog-row">
-          <input value="${escapeHtml(horas[i])}" placeholder="10:00" title="${auto?"Calculada automáticamente. Escribí una hora para fijarla.":"Hora fijada manualmente"}" style="${auto?"color:var(--ink-soft)":""}" onchange="progCampo(${i},'hora',this.value)">
-          <input value="${escapeHtml(it.dur||"")}" placeholder="5" title="Duración en minutos" onchange="progCampo(${i},'dur',this.value)">
-          <input value="${escapeHtml(it.titulo||"")}" placeholder="Bienvenida, Adoración, Prédica…" onchange="progCampo(${i},'titulo',this.value)">
-          <input value="${escapeHtml(it.resp||"")}" placeholder="Responsable" onchange="progCampo(${i},'resp',this.value)">
-          <div style="display:flex;gap:2px"><button class="mini" title="Subir" onclick="progMover(${i},-1)">↑</button><button class="mini" title="Quitar" onclick="progQuitar(${i})">✕</button></div>
-        </div>`
-      : `<div class="prog-row">
-          <span class="mono" style="font-size:12px">${escapeHtml(horas[i])}</span>
-          <span class="mono" style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.dur||"")}′</span>
-          <span style="font-size:13px;font-weight:600">${escapeHtml(it.titulo||"")}</span>
-          <span style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.resp||"")}</span><span></span>
-        </div>`;
+    html += `<div class="timeline-item">
+      <div class="timeline-time">
+        ${editable
+          ? `<input class="t${auto?" auto":""}" value="${escapeHtml(horas[i])}" placeholder="10:00" title="${auto?"Calculada automáticamente. Escribí una hora para fijarla.":"Hora fijada manualmente"}" onchange="progCampo(${i},'hora',this.value)">`
+          : `<div class="t${auto?" auto":""}">${escapeHtml(horas[i])}</div>`}
+      </div>
+      <div class="timeline-rail"><div class="timeline-dot"></div></div>
+      <div class="timeline-content">
+        ${editable
+          ? `<input class="tit" value="${escapeHtml(it.titulo||"")}" placeholder="Bienvenida, Adoración, Prédica…" onchange="progCampo(${i},'titulo',this.value)">`
+          : `<div class="tit" style="font-weight:700;font-size:14px">${escapeHtml(it.titulo||"(sin título)")}</div>`}
+        <div class="timeline-foot">
+          ${editable
+            ? `<input class="timeline-resp" value="${escapeHtml(it.resp||"")}" placeholder="Responsable" onchange="progCampo(${i},'resp',this.value)">`
+            : `<span class="timeline-resp">${escapeHtml(it.resp||"")}</span>`}
+          <div class="timeline-dur">
+            ${editable
+              ? `<input value="${escapeHtml(it.dur||"")}" placeholder="5" title="Duración en minutos" onchange="progCampo(${i},'dur',this.value)">`
+              : `<span class="mono">${escapeHtml(it.dur||"0")}</span>`}
+            <span>min</span>
+          </div>
+          ${editable ? `<div class="timeline-actions"><button class="mini" title="Subir" onclick="progMover(${i},-1)">↑</button><button class="mini" title="Quitar" onclick="progQuitar(${i})">✕</button></div>` : ""}
+        </div>
+      </div>
+    </div>`;
   });
+  html += `</div>`;
   if(editable) html+=`<div class="chips" style="margin-top:10px">
     <button class="chip-add" onclick="progAgregar()">+ Ítem</button>
     ${items.length?"":`<button class="chip-add" onclick="progPlantilla()">Usar plantilla de servicio</button>`}
@@ -2265,18 +2306,26 @@ function renderSheetSetlist(r){
   html += `<div class="act-row"><div class="act-name"><span></span><span class="act-count">${setlist.length} canciones</span></div>`;
   setlist.forEach((it,i)=>{
     const c = state.canciones.find(x=>x.id===it.cancionId);
-    html += `<div class="set-row">
-      <span class="set-num">${i+1}</span>
-      <span class="set-tit">${escapeHtml(c?c.nombre:"(eliminada)")} <span class="set-art">${escapeHtml(c?.artista||"")}</span></span>
-      ${c?.link?`<a class="mini" href="${escapeHtml(c.link)}" target="_blank" title="Referencia">▶</a>`:""}
-      ${editable?`
-      <input class="set-in" value="${escapeHtml(it.tono||"")}" placeholder="Tono" title="Tono" onchange="setlistCampo(${i},'tono',this.value)">
-      <input class="set-in" value="${escapeHtml(it.bpm||"")}" placeholder="BPM" title="BPM" onchange="setlistCampo(${i},'bpm',this.value)">
-      <input class="set-in canta" value="${escapeHtml(it.cantante||"")}" placeholder="¿Quién canta?" title="Quién la canta" onchange="setlistCampo(${i},'cantante',this.value)">
-      <button class="mini" title="Subir" onclick="setlistMover(${i},-1)">↑</button>
-      <button class="mini" title="Bajar" onclick="setlistMover(${i},1)">↓</button>
-      <button class="mini" title="Quitar" onclick="setlistQuitar(${i})">✕</button>`
-      :`<span class="mono" style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.tono||"")}${it.bpm?" · "+escapeHtml(it.bpm):""}${it.cantante?" · canta "+escapeHtml(it.cantante):""}</span>`}
+    html += `<div class="setlist-card">
+      <span class="setlist-num">${i+1}</span>
+      <div class="setlist-main">
+        <span class="setlist-title">${escapeHtml(c?c.nombre:"(eliminada)")}</span>
+        <span class="setlist-artist">${escapeHtml(c?.artista||"")}</span>
+        ${editable?`
+        <div class="setlist-fields">
+          <input class="set-in" value="${escapeHtml(it.tono||"")}" placeholder="Tono" title="Tono" onchange="setlistCampo(${i},'tono',this.value)">
+          <input class="set-in" value="${escapeHtml(it.bpm||"")}" placeholder="BPM" title="BPM" onchange="setlistCampo(${i},'bpm',this.value)">
+          <input class="set-in canta" value="${escapeHtml(it.cantante||"")}" placeholder="¿Quién canta?" title="Quién la canta" onchange="setlistCampo(${i},'cantante',this.value)">
+        </div>`
+        :(it.tono||it.bpm||it.cantante?`<div class="setlist-fields"><span class="mono" style="font-size:12px;color:var(--ink-soft)">${escapeHtml(it.tono||"")}${it.bpm?" · "+escapeHtml(it.bpm):""}${it.cantante?" · canta "+escapeHtml(it.cantante):""}</span></div>`:"")}
+      </div>
+      <div class="setlist-actions">
+        ${c?.link?`<a class="mini" href="${escapeHtml(c.link)}" target="_blank" title="Referencia">▶</a>`:""}
+        ${editable?`
+        <button class="mini" title="Subir" onclick="setlistMover(${i},-1)">↑</button>
+        <button class="mini" title="Bajar" onclick="setlistMover(${i},1)">↓</button>
+        <button class="mini" title="Quitar" onclick="setlistQuitar(${i})">✕</button>`:""}
+      </div>
     </div>`;
   });
   if(editable) html += `<div class="chips" style="margin-top:8px"><button class="chip-add" onclick="abrirCancPicker()">+ Agregar canción</button></div>`;
@@ -2401,49 +2450,41 @@ window.setlistAgregar = id=>{
 };
 
 /* ---------- Adoración: vista de bandas y canciones ---------- */
-let adoTab="bandas";
-window.setAdoTab = t=>{
-  adoTab=t;
-  $("segBandas").classList.toggle("on", t==="bandas");
-  $("segCanc").classList.toggle("on", t==="canciones");
-  $("adoBtnB").style.display = t==="bandas" ? "" : "none";
-  $("adoBtnC").style.display = t==="canciones" ? "" : "none";
-  renderAdo();
-};
-function renderAdo(){
-  const cont=$("adoBody"); if(!cont) return;
+function renderBandas(){
+  const cont=$("bandasBody"); if(!cont) return;
   const editable = puedeEditarArea("adoracion");
-  if(adoTab==="bandas"){
-    $("btnNuevaBanda").style.display = (editable && !bandasPermitidas()) ? "" : "none";
-    cont.innerHTML = state.bandas.length ? `<div class="list-card">`+state.bandas.map(b=>`
-      <div class="row-item">
-        <div class="row-main">
-          <div class="row-title">${escapeHtml(b.nombre)}</div>
-          <div class="row-sub">${(b.miembros||[]).map(m=>{const s=servidor(m.servidorId); return `<span class="tag">${escapeHtml(s?s.nombre:"?")}${m.rol?" · "+escapeHtml(m.rol):""}</span>`;}).join("")||"Sin integrantes"}</div>
-        </div>
-        ${puedeEditarBanda(b.id)?`<div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarBanda('${b.id}')">Editar</button></div>`:""}
-      </div>`).join("")+`</div>`
-    : `<div class="empty-state"><strong>Todavía no hay bandas</strong>${editable?'Crealas con "+ Banda": nombre e integrantes con su rol. Los integrantes tienen que estar cargados como servidores.':'Un líder de Adoración todavía no cargó las bandas.'}</div>`;
-  }else{
-    ["btnNuevaCanc","btnImportCanc","btnPlantillaCanc"].forEach(id=>$(id).style.display = editable ? "" : "none");
-    const q=(state.cancQ||"").toLowerCase();
-    const lista=state.canciones.filter(c=>!q || c.nombre.toLowerCase().includes(q) || (c.artista||"").toLowerCase().includes(q) || (c.tipo||"").toLowerCase().includes(q));
-    cont.innerHTML = `<input class="search-box" id="cancQ" type="text" placeholder="Buscar entre ${state.canciones.length} canciones…" value="${escapeHtml(state.cancQ||"")}">`
-    + (lista.length ? `<div class="list-card">`+lista.slice(0,80).map(c=>`
-      <div class="row-item">
-        <div class="row-main">
-          <div class="row-title">${escapeHtml(c.nombre)} <span class="set-art">${escapeHtml(c.artista||"")}</span></div>
-          <div class="row-sub">${[c.tipo, c.tono?"Tono "+c.tono:null, c.bpm?"♩ "+c.bpm:null, c.tpm?"TP-M "+c.tpm:null, c.tph?"TP-H "+c.tph:null, c.pista?"Con pista":null].filter(Boolean).map(x=>escapeHtml(String(x))).join(" · ")||"Sin datos musicales"}</div>
-        </div>
-        <div class="row-actions">
-          ${c.link?`<a class="btn btn-ghost btn-sm" style="text-decoration:none" target="_blank" href="${escapeHtml(c.link)}" title="Referencia">▶</a>`:""}
-          ${editable?`<button class="btn btn-ghost btn-sm" onclick="editarCanc('${c.id}')">Editar</button>`:""}
-        </div>
-      </div>`).join("")+(lista.length>80?`<div class="row-item"><div class="row-main"><div class="row-sub">Mostrando 80 de ${lista.length} — afiná la búsqueda para ver el resto.</div></div></div>`:"")+`</div>`
-    : `<div class="empty-state"><strong>No hay canciones${q?" con esa búsqueda":""}</strong>${editable?'Importá el CSV de tu planilla o cargalas con "+ Canción".':''}</div>`);
-    const inp=$("cancQ");
-    inp.oninput=()=>{ state.cancQ=inp.value; const pos=inp.selectionStart; renderAdo(); const n=$("cancQ"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } };
-  }
+  $("btnNuevaBanda").style.display = (editable && !bandasPermitidas()) ? "" : "none";
+  cont.innerHTML = state.bandas.length ? `<div class="list-card">`+state.bandas.map(b=>`
+    <div class="row-item">
+      <div class="row-main">
+        <div class="row-title">${escapeHtml(b.nombre)}</div>
+        <div class="row-sub">${(b.miembros||[]).map(m=>{const s=servidor(m.servidorId); return `<span class="tag">${escapeHtml(s?s.nombre:"?")}${m.rol?" · "+escapeHtml(m.rol):""}</span>`;}).join("")||"Sin integrantes"}</div>
+      </div>
+      ${puedeEditarBanda(b.id)?`<div class="row-actions"><button class="btn btn-ghost btn-sm" onclick="editarBanda('${b.id}')">Editar</button></div>`:""}
+    </div>`).join("")+`</div>`
+  : `<div class="empty-state"><strong>Todavía no hay bandas</strong>${editable?'Crealas con "+ Banda": nombre e integrantes con su rol. Los integrantes tienen que estar cargados como servidores.':'Un líder de Adoración todavía no cargó las bandas.'}</div>`;
+}
+function renderCanciones(){
+  const cont=$("cancionesBody"); if(!cont) return;
+  const editable = puedeEditarArea("adoracion");
+  ["btnNuevaCanc","btnImportCanc","btnPlantillaCanc"].forEach(id=>$(id).style.display = editable ? "" : "none");
+  const q=(state.cancQ||"").toLowerCase();
+  const lista=state.canciones.filter(c=>!q || c.nombre.toLowerCase().includes(q) || (c.artista||"").toLowerCase().includes(q) || (c.tipo||"").toLowerCase().includes(q));
+  cont.innerHTML = `<input class="search-box" id="cancQ" type="text" placeholder="Buscar entre ${state.canciones.length} canciones…" value="${escapeHtml(state.cancQ||"")}">`
+  + (lista.length ? `<div class="list-card">`+lista.slice(0,80).map(c=>`
+    <div class="row-item">
+      <div class="row-main">
+        <div class="row-title">${escapeHtml(c.nombre)} <span class="set-art">${escapeHtml(c.artista||"")}</span></div>
+        <div class="row-sub">${[c.tipo, c.tono?"Tono "+c.tono:null, c.bpm?"♩ "+c.bpm:null, c.tpm?"TP-M "+c.tpm:null, c.tph?"TP-H "+c.tph:null, c.pista?"Con pista":null].filter(Boolean).map(x=>escapeHtml(String(x))).join(" · ")||"Sin datos musicales"}</div>
+      </div>
+      <div class="row-actions">
+        ${c.link?`<a class="btn btn-ghost btn-sm" style="text-decoration:none" target="_blank" href="${escapeHtml(c.link)}" title="Referencia">▶</a>`:""}
+        ${editable?`<button class="btn btn-ghost btn-sm" onclick="editarCanc('${c.id}')">Editar</button>`:""}
+      </div>
+    </div>`).join("")+(lista.length>80?`<div class="row-item"><div class="row-main"><div class="row-sub">Mostrando 80 de ${lista.length} — afiná la búsqueda para ver el resto.</div></div></div>`:"")+`</div>`
+  : `<div class="empty-state"><strong>No hay canciones${q?" con esa búsqueda":""}</strong>${editable?'Importá el CSV de tu planilla o cargalas con "+ Canción".':''}</div>`);
+  const inp=$("cancQ");
+  inp.oninput=()=>{ state.cancQ=inp.value; const pos=inp.selectionStart; renderCanciones(); const n=$("cancQ"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } };
 }
 
 /* ---------- Bandas: CRUD ---------- */
