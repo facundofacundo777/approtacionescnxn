@@ -261,7 +261,11 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .role-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .role-card-head .area-name{font-size:15px;font-weight:800}
 .role-group{padding:12px 0;border-top:1px solid var(--line)}
-.role-group:first-of-type{padding-top:0;border-top:none}
+.role-group:first-child{padding-top:0;border-top:none}
+/* Puestos siempre en 2 columnas, para que la lista no sea tan larga */
+.role-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;align-items:start}
+.role-grid .role-group:nth-child(2){padding-top:0;border-top:none}
+@media(min-width:520px){ .role-grid{column-gap:28px} }
 .role-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .role-group-head .rg-name{font-size:13px;font-weight:600;color:var(--ink-soft)}
 .role-group-head .rg-count{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--card-2);color:var(--ink-soft)}
@@ -1372,7 +1376,7 @@ function renderSheetEquipo(r){
     const editable = puedeEditarArea(a.id);
     const actividades = a.actividades.filter(ac=>!ac.porBanda);
     if(!actividades.length) return;
-    html += `<div class="role-card"><div class="role-card-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div>`;
+    html += `<div class="role-card"><div class="role-card-head"><span class="area-name">${escapeHtml(a.nombre)}</span>${editable?"":'<span class="area-lock">solo lectura</span>'}</div><div class="role-grid">`;
     actividades.forEach(ac=>{
       const key=slotKey(a.id,ac.id);
       const ids = asig[key]||[];
@@ -1394,7 +1398,7 @@ function renderSheetEquipo(r){
       }
       html += `</div></div>`;
     });
-    html += `</div>`;
+    html += `</div></div>`;
   });
   return html;
 }
@@ -2360,6 +2364,7 @@ function renderSheetAdo(r){
       if(!(rol in idxRol)){ idxRol[rol]=grupos.length; grupos.push({rol, items:[]}); }
       grupos[idxRol[rol]].items.push({...m, i});
     });
+    html += `<div class="role-grid">`;
     grupos.forEach(g=>{
       const cub=g.items.filter(x=>x.servidorId && servidor(x.servidorId)).length;
       const full = cub>=g.items.length;
@@ -2383,6 +2388,7 @@ function renderSheetAdo(r){
       });
       html += `</div></div>`;
     });
+    html += `</div>`;
   }
   html += `</div>`;
   return html;
