@@ -323,6 +323,28 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .role-badge.admin{background:var(--accent-soft);color:var(--accent-ink)}
 .role-badge.lider{background:var(--card-2);color:var(--ink-soft)}
 .role-badge.pendiente{background:var(--danger-soft);color:var(--danger)}
+/* ---------- Notificaciones y actividad ---------- */
+.notif-btn{position:relative}
+.notif-badge{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace}
+.notif-overlay{position:fixed;inset:0;z-index:75;display:none}
+.notif-overlay.open{display:block}
+.notif-panel{position:fixed;top:56px;right:14px;width:min(380px,calc(100vw - 28px));max-height:min(560px,80vh);background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 40px rgba(23,35,59,.22);display:flex;flex-direction:column;overflow:hidden}
+[data-theme="dark"] .notif-panel{box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.notif-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+.notif-head strong{font-size:15px}
+.notif-list{overflow-y:auto;padding:6px}
+.evento{display:flex;gap:11px;padding:11px 10px;border-radius:12px}
+.evento+.evento{border-top:1px solid var(--line)}
+.evento-ic{width:34px;height:34px;border-radius:10px;background:var(--card-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-soft)}
+.evento-ic svg{width:18px;height:18px}
+.evento.nuevo .evento-ic{background:var(--accent-soft);color:var(--accent-ink)}
+.evento-main{min-width:0;flex:1}
+.evento-txt{font-size:13px;line-height:1.4}
+.evento-txt b{font-weight:700}
+.evento-meta{font-size:11px;color:var(--ink-faint);margin-top:3px;font-family:'IBM Plex Mono',monospace}
+.notif-empty{padding:34px 20px;text-align:center;color:var(--ink-soft);font-size:14px}
+.act-filtro{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--ink-soft)}
+.act-filtro.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .row-sub{font-size:12px;color:var(--ink-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row-actions{display:flex;gap:6px;flex-shrink:0}
 .row-item .avatar{width:38px;height:38px;font-size:13px}
@@ -444,6 +466,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
     <g id="ic-areas" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></g>
     <g id="ic-usuarios" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M15.5 13.8l2 2 3.5-3.6"/></g>
     <g id="ic-mas" fill="currentColor"><circle cx="6" cy="6" r="1.7"/><circle cx="12" cy="6" r="1.7"/><circle cx="18" cy="6" r="1.7"/><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/><circle cx="6" cy="18" r="1.7"/><circle cx="12" cy="18" r="1.7"/><circle cx="18" cy="18" r="1.7"/></g>
+    <g id="ic-actividad" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3.5V8h4.5"/><path d="M12 7.5V12l3 2"/></g>
   </defs></svg>
 
   <!-- Sidebar (desktop) -->
@@ -460,6 +483,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
       <button class="nav-item" data-view="bandas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-bandas"/></svg>Rotaciones de Bandas</button>
       <button class="nav-item" data-view="areas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-areas"/></svg>Áreas</button>
       <button class="nav-item" data-view="usuarios" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-usuarios"/></svg>Usuarios</button>
+      <button class="nav-item" data-view="actividad" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-actividad"/></svg>Actividad</button>
     </nav>
   </aside>
 
@@ -471,6 +495,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
         <span class="user-chip"><span id="userName"></span><span class="rol" id="userRol"></span></span>
         <span class="rol" id="espacioBadge" style="display:none;background:var(--accent-soft);color:var(--accent-ink);border-color:transparent"></span>
         <button class="icon-btn" id="btnEspacio" style="display:none" title="Cambiar espacio" aria-label="Cambiar espacio">⇄</button>
+        <button class="icon-btn notif-btn" id="btnNotif" title="Notificaciones" aria-label="Notificaciones">🔔<span class="notif-badge" id="notifBadge" style="display:none">0</span></button>
         <button class="icon-btn" id="btnTheme" title="Cambiar tema" aria-label="Cambiar tema">🌙</button>
         <button class="icon-btn" id="btnLogout" title="Salir" aria-label="Salir">⏻</button>
       </div>
@@ -568,6 +593,13 @@ input,select,textarea{font-family:inherit;font-size:15px}
     <p class="section-note">Las personas que ingresan con Google aparecen acá. Asignales un rol: los administradores manejan todo; los líderes solo asignan servidores dentro de sus áreas.</p>
     <div class="list-card" id="usersList"></div>
   </section>
+
+  <!-- Vista: Actividad (log de admin) -->
+  <section class="view" id="view-actividad">
+    <p class="section-note">Registro de los cambios hechos por cualquier persona: reuniones, servidores, bandas, asignaciones, permisos. Es de referencia — se guarda a medida que se usa la app.</p>
+    <div class="toolbar" id="actividadFiltros"></div>
+    <div id="actividadList"></div>
+  </section>
   </div><!-- /content-wrap -->
   </div><!-- /shell-main -->
 
@@ -587,6 +619,15 @@ input,select,textarea{font-family:inherit;font-size:15px}
       <button class="nav-item" data-view="bandas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-bandas"/></svg>Rotaciones de Bandas</button>
       <button class="nav-item" data-view="areas" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-areas"/></svg>Áreas</button>
       <button class="nav-item" data-view="usuarios" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-usuarios"/></svg>Usuarios</button>
+      <button class="nav-item" data-view="actividad" data-admin="1"><svg viewBox="0 0 24 24"><use href="#ic-actividad"/></svg>Actividad</button>
+    </div>
+  </div>
+
+  <!-- Panel de notificaciones -->
+  <div class="notif-overlay" id="notifOverlay">
+    <div class="notif-panel">
+      <div class="notif-head"><strong>Notificaciones</strong><button class="close-x" data-close-notif="1" aria-label="Cerrar">✕</button></div>
+      <div class="notif-list" id="notifList"></div>
     </div>
   </div>
 </div>
@@ -926,7 +967,8 @@ const state = {
   espacio:null, userDoc:null,
   mes: new Date().toISOString().slice(0,7),
   unsubs:[], sheetReunionId:null,
-  picker:null, editServId:null, editAreaId:null, importRows:null
+  picker:null, editServId:null, editAreaId:null, importRows:null,
+  eventos:[], gestionUserId:null, actividadFiltro:"todos"
 };
 
 let db, auth;
@@ -939,6 +981,18 @@ function conManejo(fn, msg){
     try{ await fn(...args); }
     catch(e){ toast((msg||"No se pudo completar la acción")+": "+e.message, true); }
   };
+}
+/* Registro de eventos: escribe un evento al log. Nunca frena la acción principal si falla. */
+async function registrarEvento(tipo, texto){
+  if(!db || !state.user) return;
+  try{
+    await db.collection("eventos").add({
+      tipo, texto,
+      autorUid: state.user.uid,
+      autorNombre: state.user.displayName || state.user.email || "",
+      creado: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(e){ /* el log es best-effort: si falla, la acción ya se hizo igual */ }
 }
 function esAdmin(){ return state.rol==="admin"; }
 function puedeEditarArea(areaId){ return esAdmin() || (state.rol==="lider" && state.misAreas.includes(areaId)); }
@@ -1117,6 +1171,10 @@ function suscribirGlobal(){
     state.notas = s.docs.map(d=>({id:d.id, ...d.data()}));
     renderNotas(); renderInicio();
   }, e=>toast("Error al sincronizar notas: "+e.message, true)));
+  state.unsubs.push(db.collection("eventos").orderBy("creado","desc").limit(100).onSnapshot(s=>{
+    state.eventos = s.docs.map(d=>({id:d.id, ...d.data()}));
+    renderNotif(); renderActividad();
+  }, e=>{}));
   if(esAdmin()){
     state.unsubs.push(db.collection("usuarios").onSnapshot(s=>{
       state.usuarios = s.docs.map(d=>({id:d.id, ...d.data()}));
@@ -1561,6 +1619,7 @@ $("btnDelReunion").onclick = conManejo(async ()=>{
   batch.delete(db.collection("adoracion").doc(r.id));
   batch.delete(db.collection("reuniones").doc(r.id));
   await batch.commit();
+  registrarEvento("plan", "eliminó la reunión "+r.titulo+" del "+fmtFecha(r.fecha));
   cerrarSheet(); toast("Reunión eliminada");
 }, "No se pudo eliminar la reunión");
 
@@ -1629,6 +1688,7 @@ window.copiarDesde = async function(srcId){
     const rv = state.asignaciones[destinoId] = {slots:{}};
     dest.docs.forEach(d=>{ const x=d.data(); for(const act in (x.slots||{})) rv.slots[x.areaId+"."+act]=x.slots[act]; });
     renderPlan(); renderStats(); if(state.sheetReunionId) renderSheet();
+    if(agregados){ const rC=state.reuniones.find(x=>x.id===destinoId); registrarEvento("asignacion", "copió un equipo ("+agregados+" asignaciones)"+(rC?" a "+rC.titulo+" "+fmtFecha(rC.fecha):"")); }
     toast(agregados
       ? agregados+" asignados"+(omitidos?" · "+omitidos+" omitidos (ocupados, sin cupo, no disponibles o eliminados)":"")
       : "No había nada para copiar"+(omitidos?" ("+omitidos+" omitidos)":""));
@@ -1749,6 +1809,8 @@ window.asignar = async function(servidorId){
     rv.slots[kv]=local;
     renderPlan(); renderStats(); renderSheet();
     $("pickerOverlay").classList.remove("open");
+    const rA=state.reuniones.find(x=>x.id===reunionId);
+    registrarEvento("asignacion", "asignó a "+(servidor(servidorId)?.nombre||"")+" en "+nombreActividad(kv)+(rA?" — "+rA.titulo+" "+fmtFecha(rA.fecha):""));
     toast("Asignado: "+(servidor(servidorId)?.nombre||""));
   }catch(e){
     if(String(e.message).startsWith("CONFLICTO:")){
@@ -1776,6 +1838,8 @@ window.quitarAsignacion = conManejo(async function(key, servidorId){
   const rv = state.asignaciones[reunionId];
   if(rv && rv.slots[key]) rv.slots[key]=rv.slots[key].filter(id=>id!==servidorId);
   renderPlan(); renderStats(); renderSheet();
+  const rQ=state.reuniones.find(x=>x.id===reunionId);
+  registrarEvento("asignacion", "quitó a "+(s?s.nombre:"un servidor")+" de "+nombreActividad(key)+(rQ?" — "+rQ.titulo+" "+fmtFecha(rQ.fecha):""));
   toast("Quitado");
 }, "No se pudo quitar la asignación");
 
@@ -1817,6 +1881,7 @@ $("btnGenConfirm").onclick = conManejo(async ()=>{
     batch.set(db.collection("reuniones").doc(id), {fecha:c.fecha, hora:c.hora, titulo:c.titulo, mes:state.mes});
   });
   await batch.commit();
+  registrarEvento("plan", "generó "+marcadas.length+" reuniones de "+mesLabel(state.mes));
   $("genOverlay").classList.remove("open");
   toast(marcadas.length+" reuniones creadas");
 }, "No se pudieron crear las reuniones");
@@ -1827,6 +1892,7 @@ $("btnSaveReunion").onclick = conManejo(async ()=>{
   if(!titulo||!fecha||!hora){ toast("Completá nombre, fecha y hora", true); return; }
   const id=fecha+"_"+hora.replace(":","");
   await db.collection("reuniones").doc(id).set({fecha, hora, titulo, mes:fecha.slice(0,7), especial:true});
+  registrarEvento("plan", "agregó la reunión especial "+titulo+" ("+fmtFecha(fecha)+")");
   $("reuOverlay").classList.remove("open");
   if(fecha.slice(0,7)!==state.mes){ state.mes=fecha.slice(0,7); renderMesLabel(); suscribirMes(); }
   toast("Reunión creada");
@@ -1918,8 +1984,10 @@ $("btnSaveServ").onclick=conManejo(async ()=>{
     rolesAdoracion:[...$("fRolesAdo").querySelectorAll("input:checked")].map(i=>i.value),
     noDisponible: state.editNd||[]
   };
+  const editando=!!state.editServId;
   if(state.editServId) await db.collection("servidores").doc(state.editServId).set(data,{merge:true});
   else await db.collection("servidores").add(data);
+  registrarEvento("servidores", (editando?"editó al servidor ":"agregó al servidor ")+nombre);
   $("servOverlay").classList.remove("open");
   toast("Guardado: "+nombre);
 }, "No se pudo guardar el servidor");
@@ -1927,6 +1995,7 @@ $("btnDelServ").onclick=conManejo(async ()=>{
   const s=servidor(state.editServId);
   if(!confirm("¿Eliminar a "+s.nombre+"? Sus asignaciones pasadas quedan como '(eliminado)'.")) return;
   await db.collection("servidores").doc(state.editServId).delete();
+  registrarEvento("servidores", "dio de baja al servidor "+(s?s.nombre:""));
   $("servOverlay").classList.remove("open");
   toast("Servidor eliminado");
 }, "No se pudo eliminar el servidor");
@@ -2035,6 +2104,7 @@ $("btnImpConfirm").onclick=async ()=>{
       else{ batch.set(db.collection("servidores").doc(), r); nuevos++; }
     });
     await batch.commit();
+    registrarEvento("servidores", "importó servidores ("+nuevos+" nuevos, "+actualizados+" actualizados)");
     $("impOverlay").classList.remove("open");
     toast(nuevos+" nuevos, "+actualizados+" actualizados");
   }catch(e){
@@ -2094,8 +2164,10 @@ $("btnSaveArea").onclick=conManejo(async ()=>{
   }).filter(Boolean);
   if(!actividades.length){ toast("Agregá al menos una actividad", true); return; }
   const id = state.editAreaId || slug(nombre);
+  const editandoArea=!!state.editAreaId;
   const orden = state.editAreaId ? area(id).orden : (Math.max(0,...state.areas.map(a=>a.orden||0))+1);
   await db.collection("areas").doc(id).set({nombre, orden, actividades});
+  registrarEvento("areas", (editandoArea?"editó el área ":"creó el área ")+nombre);
   $("areaOverlay").classList.remove("open");
   toast("Área guardada");
 }, "No se pudo guardar el área");
@@ -2103,6 +2175,7 @@ $("btnDelArea").onclick=conManejo(async ()=>{
   const a=area(state.editAreaId);
   if(!confirm("¿Eliminar el área "+a.nombre+"? Las asignaciones existentes de esta área dejan de mostrarse.")) return;
   await db.collection("areas").doc(state.editAreaId).delete();
+  registrarEvento("areas", "eliminó el área "+(a?a.nombre:""));
   $("areaOverlay").classList.remove("open");
   toast("Área eliminada");
 }, "No se pudo eliminar el área");
@@ -2176,7 +2249,7 @@ function renderGestionUsuario(){
     `:`<p class="section-note">Los permisos por espacio, área y banda se configuran cuando el usuario es <strong>líder</strong>.</p>`}`;
 }
 $("btnGestionDel").onclick=()=>{ if(state.gestionUserId) delUsuario(state.gestionUserId); };
-window.setUsuarioRol=conManejo(async (id,rol)=>{ await db.collection("usuarios").doc(id).update({rol}); toast("Rol actualizado"); }, "No se pudo actualizar el rol");
+window.setUsuarioRol=conManejo(async (id,rol)=>{ const u=state.usuarios.find(x=>x.id===id); await db.collection("usuarios").doc(id).update({rol}); registrarEvento("usuarios", "cambió el rol de "+(u?.nombre||u?.email||"un usuario")+" a "+(rol==="lider"?"líder":rol)); toast("Rol actualizado"); }, "No se pudo actualizar el rol");
 window.setUsuarioEspacio=conManejo(async (id,input)=>{
   const u=state.usuarios.find(x=>x.id===id);
   let esp=new Set(espaciosDe(u));
@@ -2199,6 +2272,7 @@ window.delUsuario=conManejo(async id=>{
   const u=state.usuarios.find(x=>x.id===id);
   if(!confirm("¿Eliminar el acceso de "+(u?.nombre||u?.email||"este usuario")+"? Si vuelve a ingresar con Google, queda como pendiente hasta que lo apruebes de nuevo.")) return;
   await db.collection("usuarios").doc(id).delete();
+  registrarEvento("usuarios", "eliminó el acceso de "+(u?.nombre||u?.email||"un usuario"));
   toast("Usuario eliminado");
 }, "No se pudo eliminar el usuario");
 window.setUsuarioArea=conManejo(async (id,input)=>{
@@ -2207,6 +2281,64 @@ window.setUsuarioArea=conManejo(async (id,input)=>{
   input.checked ? areas.add(input.value) : areas.delete(input.value);
   await db.collection("usuarios").doc(id).update({areas:[...areas]});
 }, "No se pudo actualizar el área");
+
+/* ---------- Notificaciones y actividad ---------- */
+const EVENTO_ICON={plan:"ic-plan",asignacion:"ic-servidores",servidores:"ic-servidores",bandas:"ic-bandas",canciones:"ic-canciones",areas:"ic-areas",usuarios:"ic-usuarios",notas:"ic-notas",programa:"ic-actividad"};
+function eventoIcon(t){ return EVENTO_ICON[t]||"ic-actividad"; }
+function eventoTsMs(ts){ return ts&&ts.toDate?ts.toDate().getTime():(typeof ts==="number"?ts:0); }
+function ultimaVezVistoMs(){ const v=state.userDoc&&state.userDoc.ultimaVezVisto; return v&&v.toDate?v.toDate().getTime():(typeof v==="number"?v:0); }
+function fmtEventoTs(ts){
+  const d = ts && ts.toDate ? ts.toDate() : (typeof ts==="number"?new Date(ts):null);
+  if(!d) return "recién";
+  const diff=(Date.now()-d.getTime())/1000;
+  if(diff<60) return "hace un momento";
+  if(diff<3600) return "hace "+Math.floor(diff/60)+" min";
+  if(diff<86400) return "hace "+Math.floor(diff/3600)+" h";
+  return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function eventoEsNuevo(e){ return e.autorUid!==state.user?.uid && eventoTsMs(e.creado)>ultimaVezVistoMs(); }
+function eventoHTML(e,marcarNuevo){
+  return `<div class="evento${marcarNuevo&&eventoEsNuevo(e)?" nuevo":""}">
+    <div class="evento-ic"><svg viewBox="0 0 24 24"><use href="#${eventoIcon(e.tipo)}"/></svg></div>
+    <div class="evento-main">
+      <div class="evento-txt"><b>${escapeHtml(e.autorNombre||"Alguien")}</b> ${escapeHtml(e.texto||"")}</div>
+      <div class="evento-meta">${fmtEventoTs(e.creado)}</div>
+    </div></div>`;
+}
+function renderNotif(){
+  const n=(state.eventos||[]).filter(eventoEsNuevo).length;
+  const badge=$("notifBadge");
+  if(badge){ badge.textContent=n>9?"9+":String(n); badge.style.display=n?"":"none"; }
+  if($("notifOverlay") && $("notifOverlay").classList.contains("open")) renderNotifPanel();
+}
+function renderNotifPanel(){
+  const cont=$("notifList"); if(!cont) return;
+  const evs=(state.eventos||[]).slice(0,40);
+  cont.innerHTML = evs.length ? evs.map(e=>eventoHTML(e,true)).join("") : `<div class="notif-empty">Todavía no hay novedades.</div>`;
+}
+window.abrirNotif=function(){
+  $("notifOverlay").classList.add("open");
+  renderNotifPanel(); // muestra los nuevos resaltados según lo visto hasta ahora
+  if(state.user && (state.eventos||[]).length){
+    // marcar como leído de forma optimista: baja el badge ya, el guardado va por detrás
+    if(state.userDoc) state.userDoc.ultimaVezVisto=Date.now(); else state.userDoc={ultimaVezVisto:Date.now()};
+    const badge=$("notifBadge"); if(badge) badge.style.display="none";
+    db.collection("usuarios").doc(state.user.uid).update({ultimaVezVisto: firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  }
+};
+$("btnNotif").onclick=abrirNotif;
+$("notifOverlay").onclick=e=>{ if(e.target===$("notifOverlay")||e.target.closest("[data-close-notif]")) $("notifOverlay").classList.remove("open"); };
+function renderActividad(){
+  if(!esAdmin()) return;
+  const cont=$("actividadList"); if(!cont) return;
+  const tipos=[["todos","Todos"],["plan","Reuniones"],["asignacion","Asignaciones"],["servidores","Servidores"],["bandas","Bandas"],["canciones","Canciones"],["usuarios","Usuarios"],["areas","Áreas"],["notas","Notas"]];
+  $("actividadFiltros").innerHTML=tipos.map(([k,l])=>`<button class="act-filtro${state.actividadFiltro===k?" on":""}" onclick="setActividadFiltro('${k}')">${l}</button>`).join("");
+  const evs=(state.eventos||[]).filter(e=>state.actividadFiltro==="todos"||e.tipo===state.actividadFiltro);
+  cont.innerHTML = evs.length
+    ? `<div class="list-card" style="padding:6px">`+evs.map(e=>eventoHTML(e,false)).join("")+`</div>`
+    : `<div class="empty-state"><strong>Sin actividad${state.actividadFiltro!=="todos"?" de este tipo":""}</strong>Los cambios que se hagan en la app van a aparecer acá.</div>`;
+}
+window.setActividadFiltro=k=>{ state.actividadFiltro=k; renderActividad(); };
 
 /* ---------- Carga del mes ---------- */
 function renderStats(){
@@ -2307,11 +2439,13 @@ $("btnNuevaNota").onclick=()=>{
 $("btnSaveNota").onclick=conManejo(async ()=>{
   const texto=$("nTexto").value.trim();
   if(!texto){ toast("Escribí la nota", true); return; }
+  const temaSel=$("nTema").value;
   await db.collection("notas").add({
-    servidorId: $("nTema").value||null, texto, resuelta:false,
+    servidorId: temaSel||null, texto, resuelta:false,
     autorUid: state.user.uid, autorNombre: state.user.displayName||state.user.email,
     creado: firebase.firestore.FieldValue.serverTimestamp(), respuestas: []
   });
+  registrarEvento("notas", "dejó una nota"+(temaSel&&servidor(temaSel)?" sobre "+servidor(temaSel).nombre:""));
   $("notaOverlay").classList.remove("open");
   toast("Nota publicada");
 }, "No se pudo publicar la nota");
@@ -2390,6 +2524,7 @@ window.responderNota=conManejo(async id=>{
 window.delNota=conManejo(async id=>{
   if(!confirm("¿Eliminar esta nota y sus respuestas?")) return;
   await db.collection("notas").doc(id).delete();
+  registrarEvento("notas", "eliminó una nota del equipo");
   toast("Nota eliminada");
 }, "No se pudo eliminar la nota");
 
@@ -2500,6 +2635,8 @@ window.setBandaReunion = v => {
   const b = v ? state.bandas.find(x=>x.id===v) : null;
   const equipo = b ? (b.miembros||[]).map(m=>({rol:m.rol||"", servidorId:m.servidorId||null})) : [];
   guardarAdo(state.sheetReunionId, {bandaId: v||null, equipo});
+  const rB=state.reuniones.find(x=>x.id===state.sheetReunionId);
+  registrarEvento("bandas", (b?"asignó la banda "+b.nombre+" a":"quitó la banda de")+(rB?" "+rB.titulo+" "+fmtFecha(rB.fecha):" un servicio"));
 };
 window.quitarEquipo = i=>{
   if(!puedeEditarSetlist(state.sheetReunionId)) return;
@@ -2782,12 +2919,15 @@ $("btnSaveBanda").onclick=conManejo(async ()=>{
     }
     if(prop) toast("Líderes y músicos aplicados a "+prop+" rotación(es) más");
   }
+  registrarEvento("bandas", (state.editBandaId?"actualizó la banda ":"creó la banda ")+nombre);
   $("bandaOverlay").classList.remove("open");
   toast("Banda guardada: "+nombre);
 }, "No se pudo guardar la banda");
 $("btnDelBanda").onclick=conManejo(async ()=>{
   if(!confirm("¿Eliminar esta banda? Las reuniones que la tenían asignada quedan sin banda.")) return;
+  const bandaBorrada=state.bandas.find(b=>b.id===state.editBandaId);
   await db.collection("bandas").doc(state.editBandaId).delete();
+  registrarEvento("bandas", "eliminó la banda "+(bandaBorrada?bandaBorrada.nombre:""));
   $("bandaOverlay").classList.remove("open");
   toast("Banda eliminada");
 }, "No se pudo eliminar la banda");
@@ -2816,14 +2956,18 @@ $("btnSaveCanc").onclick=conManejo(async ()=>{
   CANC_CAMPOS.forEach(([el,campo])=>data[campo]=$(el).value.trim());
   if(!data.nombre){ toast("El nombre es obligatorio", true); return; }
   data.recurrencia=$("cRec").value; data.pista=$("cPista").checked;
+  const editandoCanc=!!state.editCancId;
   if(state.editCancId) await db.collection("canciones").doc(state.editCancId).set(data,{merge:true});
   else await db.collection("canciones").add(data);
+  registrarEvento("canciones", (editandoCanc?"editó la canción ":"agregó la canción ")+data.nombre);
   $("cancOverlay").classList.remove("open");
   toast("Guardada: "+data.nombre);
 }, "No se pudo guardar la canción");
 $("btnDelCanc").onclick=conManejo(async ()=>{
   if(!confirm("¿Eliminar esta canción de la biblioteca? En los setlists donde estaba va a figurar como (eliminada).")) return;
+  const cancBorrada=state.canciones.find(c=>c.id===state.editCancId);
   await db.collection("canciones").doc(state.editCancId).delete();
+  registrarEvento("canciones", "eliminó la canción "+(cancBorrada?cancBorrada.nombre:""));
   $("cancOverlay").classList.remove("open");
   toast("Canción eliminada");
 }, "No se pudo eliminar la canción");
@@ -2887,7 +3031,7 @@ $("btnImpCancConfirm").onclick=async ()=>{
 /* ---------- Cierre de modales genérico ---------- */
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove("open"));
 document.querySelectorAll(".modal-overlay").forEach(o=>o.addEventListener("click", e=>{ if(e.target===o) o.classList.remove("open"); }));
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ document.querySelectorAll(".modal-overlay.open").forEach(o=>o.classList.remove("open")); cerrarMas(); cerrarSheet(); }});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ document.querySelectorAll(".modal-overlay.open").forEach(o=>o.classList.remove("open")); $("notifOverlay").classList.remove("open"); cerrarMas(); cerrarSheet(); }});
 </script>
 </body>
 </html>
