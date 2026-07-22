@@ -319,6 +319,10 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .row-item:hover{background:var(--card-2)}
 .row-main{min-width:0;flex:1}
 .row-title{font-weight:700;font-size:14px}
+.role-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:99px;vertical-align:middle;margin-left:4px}
+.role-badge.admin{background:var(--accent-soft);color:var(--accent-ink)}
+.role-badge.lider{background:var(--card-2);color:var(--ink-soft)}
+.role-badge.pendiente{background:var(--danger-soft);color:var(--danger)}
 .row-sub{font-size:12px;color:var(--ink-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row-actions{display:flex;gap:6px;flex-shrink:0}
 .row-item .avatar{width:38px;height:38px;font-size:13px}
@@ -833,6 +837,18 @@ input,select,textarea{font-family:inherit;font-size:15px}
   </div>
 </div>
 
+<!-- ===== Modal: gestionar usuario ===== -->
+<div class="modal-overlay" id="gestionOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="gestionTitle">Gestionar usuario</h3><button class="close-x" data-close="gestionOverlay">✕</button></div>
+    <div class="modal-body" id="gestionBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" id="btnGestionDel" style="margin-right:auto">Eliminar acceso</button>
+      <button class="btn btn-primary" data-close="gestionOverlay">Listo</button>
+    </div>
+  </div>
+</div>
+
 <datalist id="rolesList">
   <option value="Líder musical"><option value="Líder de voces"><option value="Director musical">
   <option value="Batería"><option value="Bajo"><option value="Teclado">
@@ -1105,6 +1121,7 @@ function suscribirGlobal(){
     state.unsubs.push(db.collection("usuarios").onSnapshot(s=>{
       state.usuarios = s.docs.map(d=>({id:d.id, ...d.data()}));
       renderUsuarios();
+      if($("gestionOverlay").classList.contains("open")) renderGestionUsuario();
     }));
   }
 }
@@ -2091,37 +2108,74 @@ $("btnDelArea").onclick=conManejo(async ()=>{
 }, "No se pudo eliminar el área");
 
 /* ---------- Usuarios ---------- */
+function esFijo(u){ return ADMIN_EMAILS.map(e=>e.toLowerCase()).includes((u.email||"").toLowerCase()); }
+function resumenAcceso(u){
+  const fijo=esFijo(u);
+  const rol = fijo ? "admin" : (u.rol||"pendiente");
+  if(rol==="admin") return "Acceso total a toda la app.";
+  if(rol==="pendiente") return "Sin acceso todavía — esperando aprobación.";
+  // líder
+  const esp = espaciosDe(u).map(e=>e==="tecnica"?"Técnica":"Adoración").join(" y ") || "—";
+  const areasN = (u.areas||[]).map(id=>area(id)?.nombre).filter(Boolean);
+  const partes = ["Espacios: "+esp];
+  partes.push("Áreas: "+(areasN.length?areasN.join(", "):"ninguna"));
+  if(u.puedeEditarServidores) partes.push("edita servidores");
+  return partes.join(" · ");
+}
 function renderUsuarios(){
   if(!esAdmin()||!state.usuarios) return;
-  const adminsFijos=ADMIN_EMAILS.map(e=>e.toLowerCase());
-  $("usersList").innerHTML = state.usuarios.map(u=>{
-    const fijo=adminsFijos.includes((u.email||"").toLowerCase());
-    const areasChecks = state.areas.map(a=>
-      `<label class="check-item" style="display:inline-flex;margin:2px 4px 0 0"><input type="checkbox" value="${a.id}" ${(u.areas||[]).includes(a.id)?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioArea('${u.id}',this)"><span>${escapeHtml(a.nombre)}</span></label>`).join("");
-    const espU = espaciosDe(u);
-    const espChecks = ["tecnica","adoracion"].map(e=>
-      `<label class="check-item" style="display:inline-flex;margin:2px 4px 0 0"><input type="checkbox" value="${e}" ${espU.includes(e)?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioEspacio('${u.id}',this)"><span>${e==="tecnica"?"Técnica":"Adoración"}</span></label>`).join("");
-    const bases={}; state.bandas.forEach(b=>{ const base=b.id.split("_")[0]; if(!bases[base]) bases[base]=(b.nombre||base).split(" —")[0]; });
-    const bandasU=u.bandas||[];
-    const bandChecks=Object.keys(bases).sort().map(k=>
-      `<label class="check-item" style="display:inline-flex;margin:2px 4px 0 0"><input type="checkbox" value="${k}" ${bandasU.includes(k)?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioBanda('${u.id}',this)"><span>${escapeHtml(bases[k])}</span></label>`).join("");
-    return `<div class="row-item" style="flex-wrap:wrap">
-      <div class="row-main" style="flex:1;min-width:200px">
-        <div class="row-title">${escapeHtml(u.nombre||u.email)}</div>
+  const orden={pendiente:0, lider:1, admin:2};
+  const lista=[...state.usuarios].sort((a,b)=>(orden[esFijo(a)?"admin":a.rol]??1)-(orden[esFijo(b)?"admin":b.rol]??1));
+  $("usersList").innerHTML = lista.map(u=>{
+    const fijo=esFijo(u);
+    const rol = fijo ? "admin" : (u.rol||"pendiente");
+    const rolLabel = rol==="lider"?"líder":rol;
+    return `<div class="row-item">
+      <div class="avatar${rol==="pendiente"?" warn":""}">${iniciales(u.nombre||u.email)}</div>
+      <div class="row-main">
+        <div class="row-title">${escapeHtml(u.nombre||u.email)} <span class="role-badge ${rol}">${rolLabel}</span></div>
         <div class="row-sub">${escapeHtml(u.email||"")}</div>
-        <div style="margin-top:6px">${fijo?'<span class="tag">Admin fijo (configurado en el archivo)</span>':areasChecks}</div>
-        <div style="margin-top:6px"><span class="nota-meta">ESPACIOS: </span>${fijo?'<span class="tag">Técnica y Adoración</span>':espChecks}</div>
-        <div style="margin-top:6px"><span class="nota-meta">BANDAS QUE PUEDE EDITAR (vacío = todas): </span>${fijo?'<span class="tag">Todas</span>':(bandChecks||'<span class="tag">Aún no hay bandas</span>')}</div>
-        <div style="margin-top:6px"><label class="check-item" style="display:inline-flex"><input type="checkbox" ${u.puedeEditarServidores?"checked":""} ${fijo?"disabled":""} onchange="setUsuarioEditorServidores('${u.id}',this)"><span>Puede editar el listado de servidores</span></label></div>
+        <div class="row-sub" style="white-space:normal;margin-top:4px">${escapeHtml(resumenAcceso(u))}</div>
       </div>
       <div class="row-actions">
-        <select ${fijo?"disabled":""} onchange="setUsuarioRol('${u.id}',this.value)" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:var(--paper)">
-          ${["pendiente","lider","admin"].map(r=>`<option value="${r}" ${(fijo?"admin":u.rol)===r?"selected":""}>${r==="lider"?"líder":r}</option>`).join("")}
-        </select>
-        ${fijo?"":`<button class="btn btn-danger btn-sm" title="Eliminar usuario" onclick="delUsuario('${u.id}')">✕</button>`}
+        ${fijo?'<span class="tag">Admin fijo</span>':`<button class="btn btn-ghost btn-sm" onclick="abrirGestionUsuario('${u.id}')">Gestionar</button>`}
       </div></div>`;
   }).join("") || '<div class="row-item"><div class="row-main"><div class="row-title">Todavía no ingresó nadie más</div><div class="row-sub">Pasales el link de la app: al entrar con Google van a aparecer acá para que los apruebes.</div></div></div>';
 }
+window.abrirGestionUsuario=function(id){
+  state.gestionUserId=id;
+  renderGestionUsuario();
+  $("gestionOverlay").classList.add("open");
+};
+function renderGestionUsuario(){
+  const u=state.usuarios.find(x=>x.id===state.gestionUserId);
+  if(!u){ $("gestionOverlay").classList.remove("open"); return; }
+  $("gestionTitle").textContent = u.nombre||u.email;
+  const espU = espaciosDe(u);
+  const espChecks = ["tecnica","adoracion"].map(e=>
+    `<label class="check-item"><input type="checkbox" value="${e}" ${espU.includes(e)?"checked":""} onchange="setUsuarioEspacio('${u.id}',this)"><span>${e==="tecnica"?"Técnica":"Adoración"}</span></label>`).join("");
+  const areasChecks = state.areas.map(a=>
+    `<label class="check-item"><input type="checkbox" value="${a.id}" ${(u.areas||[]).includes(a.id)?"checked":""} onchange="setUsuarioArea('${u.id}',this)"><span>${escapeHtml(a.nombre)}</span></label>`).join("");
+  const bases={}; state.bandas.forEach(b=>{ const base=b.id.split("_")[0]; if(!bases[base]) bases[base]=(b.nombre||base).split(" —")[0]; });
+  const bandasU=u.bandas||[];
+  const bandChecks=Object.keys(bases).sort().map(k=>
+    `<label class="check-item"><input type="checkbox" value="${k}" ${bandasU.includes(k)?"checked":""} onchange="setUsuarioBanda('${u.id}',this)"><span>${escapeHtml(bases[k])}</span></label>`).join("");
+  const esLiderRol = (u.rol||"pendiente")==="lider";
+  $("gestionBody").innerHTML=`
+    <div class="field"><label>Rol</label>
+      <select id="gestionRol" onchange="setUsuarioRol('${u.id}',this.value)">
+        ${["pendiente","lider","admin"].map(r=>`<option value="${r}" ${(u.rol||"pendiente")===r?"selected":""}>${r==="lider"?"líder":r}</option>`).join("")}
+      </select>
+      <p class="section-note" style="margin:6px 0 0">${(u.rol||"pendiente")==="admin"?"Un admin maneja toda la app.":(u.rol||"pendiente")==="pendiente"?"Pendiente: todavía no puede entrar. Pasalo a líder o admin para darle acceso.":"Un líder solo trabaja dentro de los espacios, áreas y bandas que le asignes abajo."}</p>
+    </div>
+    ${esLiderRol?`
+    <div class="field"><label>Espacios</label><div class="check-grid">${espChecks}</div></div>
+    <div class="field"><label>Áreas</label><div class="check-grid">${areasChecks||'<span class="section-note">No hay áreas.</span>'}</div></div>
+    <div class="field"><label>Bandas que puede editar <span style="font-weight:400;text-transform:none">(vacío = todas)</span></label><div class="check-grid">${bandChecks||'<span class="section-note">Aún no hay bandas.</span>'}</div></div>
+    <div class="field"><label class="check-item" style="width:100%"><input type="checkbox" ${u.puedeEditarServidores?"checked":""} onchange="setUsuarioEditorServidores('${u.id}',this)"><span>Puede editar el listado de servidores</span></label></div>
+    `:`<p class="section-note">Los permisos por espacio, área y banda se configuran cuando el usuario es <strong>líder</strong>.</p>`}`;
+}
+$("btnGestionDel").onclick=()=>{ if(state.gestionUserId) delUsuario(state.gestionUserId); };
 window.setUsuarioRol=conManejo(async (id,rol)=>{ await db.collection("usuarios").doc(id).update({rol}); toast("Rol actualizado"); }, "No se pudo actualizar el rol");
 window.setUsuarioEspacio=conManejo(async (id,input)=>{
   const u=state.usuarios.find(x=>x.id===id);
