@@ -345,6 +345,35 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .notif-empty{padding:34px 20px;text-align:center;color:var(--ink-soft);font-size:14px}
 .act-filtro{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--ink-soft)}
 .act-filtro.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+/* ---------- Visor de chart (ChordPro) — atril oscuro ---------- */
+.chart-overlay{position:fixed;inset:0;z-index:85;background:#1c1e20;display:none;flex-direction:column}
+.chart-overlay.open{display:flex}
+.chartv-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 22px 10px;color:#fff;background:#1c1e20}
+.chartv-top h2{font-size:24px;font-weight:800;margin:0;line-height:1.1}
+.chartv-top p{margin:5px 0 0;color:#c7ccd2;font-size:13px;font-family:'IBM Plex Mono',monospace}
+.chartv-x{width:38px;height:38px;border-radius:11px;border:1px solid #3a3f45;background:#2a2e33;color:#e7eaee;font-size:16px;flex-shrink:0;cursor:pointer}
+.chartv-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 22px 12px;border-bottom:1px solid #34383c;background:#1c1e20}
+.chartv-toolbar label{display:flex;align-items:center;gap:6px;font-size:11px;color:#aab0b6;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.chartv-toolbar select{background:#30343a;color:#fff;border:1px solid #3a3f45;border-radius:8px;padding:7px 10px;font-family:inherit}
+.cvbtn{min-width:36px;height:34px;padding:0 10px;border-radius:8px;border:1px solid #3a3f45;background:#2a2e33;color:#e7eaee;font-weight:700;cursor:pointer;font-size:13px}
+.cvbtn.on{background:#0e84a9;border-color:#0e84a9;color:#fff}
+.chartv-sheet{--zoom:1;flex:1;overflow:auto;background:#1c1e20;color:#f2f3f5;padding:20px 34px 60px;font-family:Arial,Helvetica,sans-serif}
+.chartv-sheet .sheet-columns{display:grid;grid-template-columns:1fr;gap:0}
+.chartv-sheet.cols-2 .sheet-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:54px}
+.chartv-sheet .sheet-col{min-width:0}
+.chartv-sheet .section-title{break-inside:avoid;font-weight:900;font-size:calc(20px * var(--zoom));letter-spacing:.4px;margin:calc(26px * var(--zoom)) 0 calc(16px * var(--zoom));color:#fff;text-transform:uppercase}
+.chartv-sheet .section-title:first-child{margin-top:0}
+.chartv-sheet .song-line{break-inside:avoid;display:block;margin:0 0 calc(9px * var(--zoom)) 0;white-space:nowrap}
+.chartv-sheet .song-line.blank{height:calc(16px * var(--zoom));margin:0}
+.chartv-sheet .word{display:inline-block;vertical-align:bottom;white-space:pre;min-width:1ch}
+.chartv-sheet .chord-top{display:block;color:#ffd08a;font-weight:900;font-size:calc(21px * var(--zoom));line-height:1;min-height:calc(23px * var(--zoom));letter-spacing:.2px}
+.chartv-sheet .lyric-bottom{display:block;color:#f2f3f5;font-size:calc(23px * var(--zoom));line-height:1;font-weight:400}
+.chartv-sheet .plain-line{break-inside:avoid;font-size:calc(23px * var(--zoom));line-height:1.1;margin:0 0 calc(9px * var(--zoom)) 0;color:#f2f3f5;white-space:pre}
+.chartv-sheet .column-break{height:1px;margin:0}
+.chartv-sheet.raw{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:calc(14px * var(--zoom));line-height:1.7;white-space:pre-wrap;color:#e5e7eb}
+.chartv-sheet.raw .raw-chord{color:#ffd08a;font-weight:900;background:rgba(255,208,138,.12);padding:1px 4px;border-radius:5px}
+.chartv-empty{color:#aab0b6;text-align:center;padding:60px 20px;font-family:'Inter',sans-serif;font-size:15px}
+@media(max-width:760px){.chartv-sheet{padding:18px 18px 60px}.chartv-sheet.cols-2 .sheet-columns{grid-template-columns:1fr;gap:0}.chartv-top h2{font-size:20px}}
 .row-sub{font-size:12px;color:var(--ink-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row-actions{display:flex;gap:6px;flex-shrink:0}
 .row-item .avatar{width:38px;height:38px;font-size:13px}
@@ -819,6 +848,10 @@ input,select,textarea{font-family:inherit;font-size:15px}
       </div>
       <div class="field"><label>Link de referencia (YouTube / letra)</label><input type="text" id="cLink" placeholder="https://…"></div>
       <label class="toggle-line"><input type="checkbox" id="cPista"> Tiene pista / secuencia</label>
+      <div class="field"><label>Chart (ChordPro) <span style="font-weight:400;text-transform:none">— letra con acordes; se ve como chord sheet</span></label>
+        <textarea id="cChordpro" rows="7" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px" placeholder="{title: ...}&#10;{key: D}&#10;&#10;{comment: Verso 1}&#10;[D]Letra de la [G]canción..."></textarea>
+        <p class="hint" style="font-size:12px;color:var(--ink-faint);margin:5px 0 0">Pegá acá el ChordPro de la canción. Después con "Ver letra" lo ves como chord sheet y podés transponerlo.</p>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-danger btn-sm" id="btnDelCanc" style="margin-right:auto;display:none">Eliminar</button>
@@ -897,6 +930,31 @@ input,select,textarea{font-family:inherit;font-size:15px}
   <option value="Vientos"><option value="Saxo"><option value="Percusión"><option value="Voces">
 </datalist>
 
+<!-- ===== Visor de chart (ChordPro) ===== -->
+<div class="chart-overlay" id="chartOverlay">
+  <div class="chartv-top">
+    <div><h2 id="cvTitle"></h2><p id="cvSub"></p></div>
+    <button class="chartv-x" id="cvClose" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="chartv-toolbar">
+    <label>Tono <select id="cvKey"></select></label>
+    <button class="cvbtn" id="cvDown" title="Bajar semitono">−1</button>
+    <button class="cvbtn" id="cvUp" title="Subir semitono">+1</button>
+    <button class="cvbtn" id="cvOrig" title="Tono original">↺</button>
+    <label>Chart <select id="cvType">
+      <option value="standard">Standard</option>
+      <option value="number">Nashville (números)</option>
+      <option value="do-fixed">Do-Re-Mi fijo</option>
+      <option value="do-movable">Do-Re-Mi móvil</option>
+    </select></label>
+    <button class="cvbtn" id="cvCols" title="Una / dos columnas">☷</button>
+    <button class="cvbtn" id="cvFontDown" title="Achicar">A−</button>
+    <button class="cvbtn" id="cvFontUp" title="Agrandar">A＋</button>
+    <button class="cvbtn" id="cvRaw" title="Ver ChordPro crudo">{ }</button>
+  </div>
+  <div class="chartv-sheet" id="cvSheet"></div>
+</div>
+
 <div id="toasts"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -968,7 +1026,8 @@ const state = {
   mes: new Date().toISOString().slice(0,7),
   unsubs:[], sheetReunionId:null,
   picker:null, editServId:null, editAreaId:null, importRows:null,
-  eventos:[], gestionUserId:null, actividadFiltro:"todos"
+  eventos:[], gestionUserId:null, actividadFiltro:"todos",
+  charts:{}
 };
 
 let db, auth;
@@ -2769,6 +2828,7 @@ function renderCanciones(){
         <div class="row-sub">${[c.tipo, c.tono?"Tono "+c.tono:null, c.bpm?"♩ "+c.bpm:null, c.tpm?"TP-M "+c.tpm:null, c.tph?"TP-H "+c.tph:null, c.pista?"Con pista":null].filter(Boolean).map(x=>escapeHtml(String(x))).join(" · ")||"Sin datos musicales"}</div>
       </div>
       <div class="row-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openChartViewer('${c.id}')" title="Ver letra y acordes">♪ Letra</button>
         ${c.link?`<a class="btn btn-ghost btn-sm" style="text-decoration:none" target="_blank" href="${escapeHtml(c.link)}" title="Referencia">▶</a>`:""}
         ${editable?`<button class="btn btn-ghost btn-sm" onclick="editarCanc('${c.id}')">Editar</button>`:""}
       </div>
@@ -2777,6 +2837,103 @@ function renderCanciones(){
   const inp=$("cancQ");
   inp.oninput=()=>{ state.cancQ=inp.value; const pos=inp.selectionStart; renderCanciones(); const n=$("cancQ"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } };
 }
+
+/* ============================================================
+   CHORDPRO: parseo, transposición y render de chord sheet
+   (portado del importador, adaptado a la app)
+   ============================================================ */
+const CP_SHARP=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const CP_FLAT=["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+const CP_NOTE={"C":0,"B#":0,"C#":1,"Db":1,"D":2,"D#":3,"Eb":3,"E":4,"Fb":4,"E#":5,"F":5,"F#":6,"Gb":6,"G":7,"G#":8,"Ab":8,"A":9,"A#":10,"Bb":10,"B":11,"Cb":11};
+const CP_FLATKEYS=new Set(["F","Bb","Eb","Ab","Db","Gb","Cb","Dm","Gm","Cm","Fm","Bbm","Ebm","Abm"]);
+function cpDirective(text,name){ const re=new RegExp("\\{\\s*"+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*:\\s*([^}]+)\\}","i"); return (String(text||"").match(re)||[])[1]?.trim()||""; }
+function cpNormKey(k){ k=String(k||"").trim(); if(!k)return ""; const m=k.match(/^([A-G](?:#|b|♭|♯)?)(m?)/); if(!m)return k; return m[1].replace("♭","b").replace("♯","#")+(m[2]||""); }
+function cpParseMeta(text){ return {title:cpDirective(text,"title"), artist:cpDirective(text,"artist")||cpDirective(text,"subtitle"), key:cpNormKey(cpDirective(text,"key")||cpDirective(text,"original_key")), bpm:cpDirective(text,"tempo")||cpDirective(text,"bpm"), time:cpDirective(text,"time")}; }
+function cpRoot(k){ const m=String(k||"").match(/^([A-G](?:#|b)?)/); return m?m[1]:""; }
+function cpIndex(k){ return CP_NOTE[cpRoot(k)] ?? null; }
+function cpPreferFlats(k){ return CP_FLATKEYS.has(String(k||"").trim())||String(k||"").includes("b"); }
+function cpNote(index,flats){ index=((index%12)+12)%12; return (flats?CP_FLAT:CP_SHARP)[index]; }
+function cpOffset(from,to){ const a=cpIndex(from),b=cpIndex(to); if(a===null||b===null)return 0; return b-a; }
+function cpTransposeToken(token,offset,flats){ if(!offset)return token; return token.split("/").map(part=>{ const m=part.match(/^([A-G](?:#|b)?)(.*)$/); if(!m)return part; const idx=CP_NOTE[m[1]]; if(idx===undefined)return part; return cpNote(idx+offset,flats)+m[2]; }).join("/"); }
+function cpTranspose(text,from,to){ const offset=cpOffset(from,to), flats=cpPreferFlats(to); return String(text||"").replace(/\[([^\]]+)\]/g,(_,ch)=>"["+cpTransposeToken(ch,offset,flats)+"]"); }
+const CP_NUMBER=["1","b2","2","b3","3","4","#4","5","b6","6","b7","7"];
+const CP_MOV=["Do","Ra","Re","Me","Mi","Fa","Fi","Sol","Le","La","Te","Ti"];
+const CP_FIXED={"C":"Do","C#":"Do#","Db":"Reb","D":"Re","D#":"Re#","Eb":"Mib","E":"Mi","F":"Fa","F#":"Fa#","Gb":"Solb","G":"Sol","G#":"Sol#","Ab":"Lab","A":"La","A#":"La#","Bb":"Sib","B":"Si"};
+function cpConvertPart(part,targetKey){ const m=String(part||"").match(/^([A-G](?:#|b)?)(.*)$/); if(!m)return part; const root=m[1],q=m[2]||"",idx=CP_NOTE[root]; if(idx===undefined)return part; if(cvType==="number"){ const k=cpIndex(targetKey||"C")??0; return CP_NUMBER[((idx-k)%12+12)%12]+q; } if(cvType==="do-fixed") return (CP_FIXED[root]||root)+q; if(cvType==="do-movable"){ const k=cpIndex(targetKey||"C")??0; return CP_MOV[((idx-k)%12+12)%12]+q; } return part; }
+function cpConvert(chord,targetKey){ if(cvType==="standard")return chord; return String(chord||"").split("/").map(p=>cpConvertPart(p,targetKey)).join("/"); }
+function cpSection(line){ let m=line.match(/^\s*\{\s*(?:c|comment)\s*:\s*([^}]+)\}\s*$/i); if(m)return m[1].trim(); m=line.match(/^\s*\{\s*start_of_([a-z_]+)(?:\s*:\s*([^}]+))?\s*\}\s*$/i); if(m){ if(m[2])return m[2].trim(); const map={verse:"Verso",chorus:"Coro",bridge:"Puente",pre_chorus:"Pre Coro",tag:"Tag",intro:"Intro",outro:"Outro",coda:"Coda"}; return map[m[1].toLowerCase()]||m[1].replace(/_/g," "); } return ""; }
+function cpHideDirective(line){ return /^\s*\{\s*(title|artist|subtitle|key|tempo|bpm|time|ccli|ccli_license|copyright|footer|meta|album|duration|capo|end_of_|new_page)/i.test(line); }
+function cpRenderLine(line){
+  if(!line.trim())return '<div class="song-line blank"></div>';
+  if(/^\s*\{\s*column_break\s*\}\s*$/i.test(line)) return '<div class="column-break"></div>';
+  const section=cpSection(line); if(section)return '<div class="section-title">'+escapeHtml(section)+'</div>';
+  if(/^\s*\{[^}]+\}\s*$/.test(line)){ return cpHideDirective(line) ? "" : '<div class="plain-line">'+escapeHtml(line)+'</div>'; }
+  if(!line.includes("[")) return '<div class="plain-line">'+escapeHtml(line)+'</div>';
+  const parts=[]; let i=0, pending="";
+  const re=/\[([^\]]+)\]/g; let m;
+  while((m=re.exec(line))){ const before=line.slice(i,m.index); if(before){ parts.push({chord:pending, lyric:before}); pending=""; } pending=m[1]; i=re.lastIndex; }
+  const tail=line.slice(i); if(tail||pending) parts.push({chord:pending, lyric:tail||" "});
+  return '<div class="song-line">'+parts.map(p=>'<span class="word"><span class="chord-top">'+(p.chord?escapeHtml(cpConvert(p.chord,cvKey||"C")):"&nbsp;")+'</span><span class="lyric-bottom">'+escapeHtml(p.lyric).replace(/ /g,"&nbsp;")+'</span></span>').join("")+'</div>';
+}
+function cpSplitCols(entries){ if(entries.length<8) return [entries,[]]; const half=Math.ceil(entries.length/2); let best=-1; for(let i=half;i<Math.min(entries.length,half+8);i++){ if(entries[i]?.includes('section-title')){best=i;break;} } if(best<0){ for(let i=half;i>Math.max(0,half-8);i--){ if(entries[i]?.includes('section-title')){best=i;break;} } } if(best<0) best=half; return [entries.slice(0,best),entries.slice(best)]; }
+function cpRenderChart(output){
+  const lines=String(output||"").split(/\r?\n/); let cols=[[],[]], col=0, manual=false;
+  lines.forEach(line=>{ if(/^\s*\{\s*column_break\s*\}\s*$/i.test(line)){manual=true; col=Math.min(1,col+1); return;} const html=cpRenderLine(line); if(!html)return; cols[col].push(html); });
+  const two=cvCols===2;
+  if(two && !manual && cols[1].length===0){ cols=cpSplitCols(cols[0]); }
+  if(!two){ cols=[cols[0].concat(cols[1]),[]]; }
+  return '<div class="sheet-columns"><div class="sheet-col">'+cols[0].join('')+'</div>'+(two?'<div class="sheet-col">'+cols[1].join('')+'</div>':'')+'</div>';
+}
+function cpRenderRaw(line){ return escapeHtml(line).replace(/\[([^\]]+)\]/g,'<span class="raw-chord">$1</span>'); }
+
+/* ---------- Visor de chart ---------- */
+let cvSong=null, cvKey=null, cvType="standard", cvCols=1, cvFont=100, cvRaw=false;
+async function cargarChart(cancionId){
+  if(state.charts[cancionId]!==undefined) return state.charts[cancionId];
+  try{ const d=await db.collection("charts").doc(cancionId).get(); const t=d.exists?(d.data().chordpro||""):""; state.charts[cancionId]=t; return t; }
+  catch(e){ return ""; }
+}
+function cpFillKey(original){ const all=["C","C#","Db","D","D#","Eb","E","F","F#","Gb","G","G#","Ab","A","A#","Bb","B"]; $("cvKey").innerHTML=all.map(k=>`<option value="${k}">${k}${k===original?" (orig)":""}</option>`).join(""); $("cvKey").value=cvKey||original; }
+function renderChartViewer(){
+  const el=$("cvSheet"); if(!el) return;
+  el.style.setProperty("--zoom",(cvFont/100).toString());
+  $("cvCols").classList.toggle("on", cvCols===2);
+  $("cvRaw").classList.toggle("on", cvRaw);
+  if(!cvSong || !(cvSong.chordpro||"").trim()){
+    $("cvTitle").textContent=cvSong?cvSong.nombre:""; $("cvSub").textContent="";
+    el.className="chartv-sheet"; el.innerHTML=`<div class="chartv-empty">Esta canción todavía no tiene chart cargado.${puedeEditarArea("adoracion")?' Editala y pegá su ChordPro.':''}</div>`;
+    return;
+  }
+  const meta=cpParseMeta(cvSong.chordpro); const original=cvSong.tono||meta.key||"C"; if(!cvKey) cvKey=original;
+  $("cvTitle").textContent=cvSong.nombre||meta.title||"Sin título";
+  const time=cvSong.time||meta.time||"4/4";
+  $("cvSub").textContent=[cvSong.artista||meta.artist, "Tono "+cvKey, (cvSong.bpm||meta.bpm)?"♩ "+(cvSong.bpm||meta.bpm):null, time].filter(Boolean).join("   ·   ");
+  cpFillKey(original);
+  const output=cpTranspose(cvSong.chordpro, original, cvKey);
+  if(cvRaw){ el.className="chartv-sheet raw"; el.innerHTML=output.split(/\r?\n/).map(cpRenderRaw).join("\n"); }
+  else{ el.className="chartv-sheet"+(cvCols===2?" cols-2":""); el.innerHTML=cpRenderChart(output); }
+}
+window.openChartViewer=async function(cancionId){
+  const c=state.canciones.find(x=>x.id===cancionId); if(!c) return;
+  cvSong={nombre:c.nombre, artista:c.artista, tono:c.tono, bpm:c.bpm, time:c.time, chordpro:""};
+  cvKey=null; cvRaw=false;
+  $("chartOverlay").classList.add("open");
+  $("cvSheet").innerHTML=`<div class="chartv-empty">Cargando…</div>`;
+  $("cvTitle").textContent=c.nombre||""; $("cvSub").textContent="";
+  const chord=await cargarChart(cancionId);
+  cvSong.chordpro=chord||"";
+  renderChartViewer();
+};
+$("cvClose").onclick=()=>$("chartOverlay").classList.remove("open");
+$("cvKey").onchange=e=>{ cvKey=e.target.value; renderChartViewer(); };
+$("cvUp").onclick=()=>{ cvKey=cpNote(cpIndex(cvKey||"C")+1,false); renderChartViewer(); };
+$("cvDown").onclick=()=>{ cvKey=cpNote(cpIndex(cvKey||"C")-1,false); renderChartViewer(); };
+$("cvOrig").onclick=()=>{ cvKey=cvSong?(cvSong.tono||"C"):"C"; renderChartViewer(); };
+$("cvType").onchange=e=>{ cvType=e.target.value; renderChartViewer(); };
+$("cvCols").onclick=()=>{ cvCols=cvCols===2?1:2; renderChartViewer(); };
+$("cvFontUp").onclick=()=>{ cvFont=Math.min(150,cvFont+8); renderChartViewer(); };
+$("cvFontDown").onclick=()=>{ cvFont=Math.max(80,cvFont-8); renderChartViewer(); };
+$("cvRaw").onclick=()=>{ cvRaw=!cvRaw; renderChartViewer(); };
 
 /* ---------- Bandas: CRUD ---------- */
 function rolBase(r){ return String(r||"").replace(" (rota)","").trim(); }
@@ -2938,27 +3095,36 @@ $("btnNuevaCanc").onclick=()=>{
   state.editCancId=null;
   $("cancModalTitle").textContent="Nueva canción";
   CANC_CAMPOS.forEach(([el])=>$(el).value="");
-  $("cRec").value=""; $("cPista").checked=false;
+  $("cRec").value=""; $("cPista").checked=false; $("cChordpro").value="";
   $("btnDelCanc").style.display="none";
   $("cancOverlay").classList.add("open");
 };
-window.editarCanc=id=>{
+window.editarCanc=async id=>{
   const c=state.canciones.find(x=>x.id===id); if(!c) return;
   state.editCancId=id;
   $("cancModalTitle").textContent="Editar canción";
   CANC_CAMPOS.forEach(([el,campo])=>$(el).value=c[campo]||"");
   $("cRec").value=c.recurrencia||""; $("cPista").checked=!!c.pista;
+  $("cChordpro").value="";
   $("btnDelCanc").style.display="";
   $("cancOverlay").classList.add("open");
+  const chord=await cargarChart(id);
+  if(state.editCancId===id) $("cChordpro").value=chord||"";
 };
 $("btnSaveCanc").onclick=conManejo(async ()=>{
   const data={};
   CANC_CAMPOS.forEach(([el,campo])=>data[campo]=$(el).value.trim());
   if(!data.nombre){ toast("El nombre es obligatorio", true); return; }
   data.recurrencia=$("cRec").value; data.pista=$("cPista").checked;
+  const chordpro=$("cChordpro").value.trim();
+  data.tieneChart=!!chordpro;
   const editandoCanc=!!state.editCancId;
-  if(state.editCancId) await db.collection("canciones").doc(state.editCancId).set(data,{merge:true});
-  else await db.collection("canciones").add(data);
+  let cid=state.editCancId;
+  if(cid) await db.collection("canciones").doc(cid).set(data,{merge:true});
+  else { const ref=await db.collection("canciones").add(data); cid=ref.id; }
+  // el chart va en su doc aparte (charts/{cancionId}) para no cargar las letras en cada arranque
+  await db.collection("charts").doc(cid).set({chordpro, cancionId:cid}, {merge:true});
+  state.charts[cid]=chordpro;
   registrarEvento("canciones", (editandoCanc?"editó la canción ":"agregó la canción ")+data.nombre);
   $("cancOverlay").classList.remove("open");
   toast("Guardada: "+data.nombre);
@@ -2966,7 +3132,10 @@ $("btnSaveCanc").onclick=conManejo(async ()=>{
 $("btnDelCanc").onclick=conManejo(async ()=>{
   if(!confirm("¿Eliminar esta canción de la biblioteca? En los setlists donde estaba va a figurar como (eliminada).")) return;
   const cancBorrada=state.canciones.find(c=>c.id===state.editCancId);
-  await db.collection("canciones").doc(state.editCancId).delete();
+  const cid=state.editCancId;
+  await db.collection("canciones").doc(cid).delete();
+  db.collection("charts").doc(cid).delete().catch(()=>{});
+  delete state.charts[cid];
   registrarEvento("canciones", "eliminó la canción "+(cancBorrada?cancBorrada.nombre:""));
   $("cancOverlay").classList.remove("open");
   toast("Canción eliminada");
@@ -3031,7 +3200,7 @@ $("btnImpCancConfirm").onclick=async ()=>{
 /* ---------- Cierre de modales genérico ---------- */
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove("open"));
 document.querySelectorAll(".modal-overlay").forEach(o=>o.addEventListener("click", e=>{ if(e.target===o) o.classList.remove("open"); }));
-document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ document.querySelectorAll(".modal-overlay.open").forEach(o=>o.classList.remove("open")); $("notifOverlay").classList.remove("open"); cerrarMas(); cerrarSheet(); }});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ document.querySelectorAll(".modal-overlay.open").forEach(o=>o.classList.remove("open")); $("notifOverlay").classList.remove("open"); $("chartOverlay").classList.remove("open"); cerrarMas(); cerrarSheet(); }});
 </script>
 </body>
 </html>
